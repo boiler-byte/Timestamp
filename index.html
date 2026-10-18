@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⏱️ Timestamp‑Tool · exzentrisch</title>
+  <!-- Bootstrap 5 CSS + Icons via CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    /* ---------- EXZENTRISCHES DESIGN – eigene CSS-Variablen ---------- */
+    :root {
+      --bg-deep: #0b0f12;
+      --bg-surface: #12181c;
+      --bg-elevated: #1a2228;
+      --neon: #00ffc3;
+      --neon-dim: #00cc9e;
+      --neon-glow: 0 0 8px rgba(0, 255, 195, 0.5);
+      --text-primary: #e8f0f5;
+      --text-secondary: #9bb0bd;
+      --border-subtle: #2a3a44;
+      --danger: #ff6b6b;
+      --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Roboto Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      /* dezenter Hintergrund-Raster-Effekt */
+      background-image:
+        linear-gradient(rgba(0, 255, 195, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 195, 0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* ---------- HEADER – schmaler Live-Streifen ---------- */
+    .live-header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.35rem 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      backdrop-filter: blur(8px);
+      background: rgba(18, 24, 28, 0.92);
+    }
+
+    .live-header .live-metric {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      cursor: pointer;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      transition: background 0.15s, box-shadow 0.15s;
+      white-space: nowrap;
+    }
+    .live-header .live-metric:hover {
+      background: var(--bg-elevated);
+      box-shadow: var(--neon-glow);
+    }
+    .live-header .live-metric .value {
+      color: var(--neon);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .live-header .live-metric .label {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-secondary);
+    }
+
+    /* History Button rechts */
+    .history-btn {
+      margin-left: auto;
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      border-radius: 20px;
+      padding: 0.2rem 1rem;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .history-btn:hover, .history-btn:focus {
+      border-color: var(--neon);
+      box-shadow: var(--neon-glow);
+      color: var(--neon);
+    }
+
+    /* ---------- HAUPT-CONTAINER ---------- */
+    .main-container {
+      max-width: 1200px;
+      margin: 1.5rem auto 2rem;
+      padding: 0 1.25rem;
+    }
+
+    /* ---------- EINGABEFELDER ---------- */
+    .timestamp-input {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 0.6rem 1rem;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 1.25rem;
+      font-weight: 400;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      width: 100%;
+    }
+    .timestamp-input:focus {
+      outline: none;
+      border-color: var(--neon);
+      box-shadow: var(--neon-glow);
+      background: var(--bg-elevated);
+    }
+    .timestamp-input::placeholder {
+      color: #4a5f6b;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 300;
+    }
+
+    .input-group-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      margin-bottom: 0.3rem;
+      font-weight: 500;
+    }
+
+    /* ---------- AUSGABE-KARTEN ---------- */
+    .output-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+      margin-top: 1rem;
+    }
+
+    .output-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.25rem;
+      border-bottom: 1px solid rgba(42, 58, 68, 0.5);
+      gap: 0.75rem;
+    }
+    .output-row:last-child {
+      border-bottom: none;
+    }
+    .output-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+      flex: 0 0 auto;
+      min-width: 140px;
+    }
+    .output-value {
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      color: var(--neon);
+      letter-spacing: 0.02em;
+      flex: 1 1 auto;
+      word-break: break-all;
+      text-align: right;
+      padding-right: 0.25rem;
+    }
+    .copy-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1rem;
+      padding: 0.2rem 0.4rem;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+      flex: 0 0 auto;
+    }
+    .copy-btn:hover {
+      color: var(--neon);
+      background: rgba(0, 255, 195, 0.1);
+    }
+    .copy-btn.copied {
+      color: var(--neon);
+      background: rgba(0, 255, 195, 0.2);
+    }
+
+    /* Relative Zeit & Hinweise */
+    .relative-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--neon-dim);
+      background: rgba(0, 255, 195, 0.08);
+      padding: 0.2rem 0.7rem;
+      border-radius: 30px;
+      border: 1px solid rgba(0, 255, 195, 0.2);
+    }
+
+    .error-hint {
+      font-size: 0.8rem;
+      color: var(--danger);
+      padding: 0.4rem 0;
+      font-family: var(--font-mono);
+      opacity: 0.9;
+    }
+
+    /* ---------- ZEITRAUM (jetzt Teil der Output-Card B) ---------- */
+    .range-divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0.75rem 0 0.5rem;
+      color: var(--text-secondary);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 500;
+    }
+    .range-divider::before,
+    .range-divider::after {
+      content: '';
+      flex: 1 1 auto;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-subtle), transparent);
+    }
+
+    .direction-badge {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--neon);
+      background: rgba(0, 255, 195, 0.1);
+      padding: 0.15rem 0.7rem;
+      border-radius: 30px;
+      border: 1px solid var(--neon-dim);
+      display: inline-block;
+    }
+
+    /* ---------- HISTORY DROPDOWN ---------- */
+    .history-dropdown {
+      position: absolute;
+      right: 1rem;
+      top: calc(100% + 4px);
+      width: 360px;
+      max-height: 400px;
+      overflow-y: auto;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0, 255, 195, 0.1);
+      z-index: 2000;
+      padding: 0.5rem 0;
+      display: none;
+    }
+    .history-dropdown.show {
+      display: block;
+    }
+    .history-item {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(42, 58, 68, 0.5);
+      transition: background 0.15s;
+    }
+    .history-item:hover {
+      background: rgba(0, 255, 195, 0.06);
+    }
+    .history-item .raw {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-primary);
+      word-break: break-all;
+    }
+    .history-item .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      margin-top: 0.2rem;
+      gap: 0.5rem;
+    }
+    .history-item .meta .resolved {
+      font-family: var(--font-mono);
+      color: var(--neon-dim);
+    }
+    .history-item .meta .resolved .tz {
+      color: var(--text-secondary);
+      font-style: italic;
+      margin-left: 0.15rem;
+    }
+    .history-clear {
+      padding: 0.6rem 1rem;
+      color: var(--danger);
+      font-size: 0.8rem;
+      cursor: pointer;
+      text-align: center;
+      border-top: 1px solid var(--border-subtle);
+      margin-top: 0.3rem;
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+    .history-clear:hover {
+      background: rgba(255, 107, 107, 0.1);
+    }
+
+    /* ---------- ZEITPUNKT-SPALTEN ---------- */
+    .punkt-column {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    /* ---------- RESPONSIVE ---------- */
+    @media (max-width: 991px) {
+      .output-row {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 0.25rem;
+      }
+      .output-value {
+        text-align: left;
+        width: 100%;
+        padding-left: 0;
+      }
+      .output-label {
+        min-width: 120px;
+        font-size: 0.75rem;
+      }
+      .live-header {
+        gap: 0.6rem 1rem;
+        padding: 0.3rem 0.75rem;
+      }
+      .live-header .live-metric {
+        font-size: 0.75rem;
+      }
+      .history-dropdown {
+        width: calc(100vw - 2rem);
+        right: 0.5rem;
+      }
+      .main-container {
+        padding: 0 0.75rem;
+      }
+    }
+
+    /* dezenter Trennstrich */
+    hr.neon-hr {
+      border: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--neon-dim), transparent);
+      opacity: 0.3;
+      margin: 1rem 0;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-deep);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--neon-dim);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<div class="live-header">
+  <div class="live-metric" id="liveUnixSec" title="Klick übernimmt in zuletzt fokussiertes Feld">
+    <span class="label">UNIX</span>
+    <span class="value" id="unixSecValue">—</span>
+    <span class="label">s</span>
+  </div>
+  <div class="live-metric" id="liveUnixMs" title="Klick übernimmt in zuletzt fokussiertes Feld">
+    <span class="label">UNIX</span>
+    <span class="value" id="unixMsValue">—</span>
+    <span class="label">ms</span>
+  </div>
+  <div class="live-metric" id="liveLocalTime" title="Klick übernimmt in zuletzt fokussiertes Feld">
+    <span class="label">LOKAL</span>
+    <span class="value" id="localTimeValue">—</span>
+  </div>
+  <button class="history-btn" id="historyToggleBtn" aria-label="Verlauf anzeigen">
+    <i class="bi bi-clock-history"></i> Verlauf
+  </button>
+  <!-- History Dropdown -->
+  <div class="history-dropdown" id="historyDropdown"></div>
+</div>
+
+<!-- ========== MAIN ========== -->
+<div class="main-container">
+
+  <!-- Zwei-Spalten-Layout für A und B -->
+  <div class="row g-4">
+    <!-- Spalte A -->
+    <div class="col-12 col-lg-6">
+      <div class="punkt-column">
+        <div class="mb-2">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="input-group-label">⏺ Zeitpunkt A</div>
+            <button class="btn btn-sm" id="btnAnow" style="background: transparent; border: 1px solid var(--border-subtle); color: var(--neon); font-size: 0.7rem; padding: 0.15rem 0.7rem; border-radius: 20px;">A = jetzt</button>
+          </div>
+          <input type="text" class="timestamp-input" id="inputA" placeholder="now, -2h, 2025-01-15 14:30:00, 1737000000 …" autocomplete="off" spellcheck="false">
+        </div>
+        <div id="errorA" class="error-hint"></div>
+
+        <!-- Ausgabe A: alle Formate -->
+        <div class="output-card" id="outputCardA">
+          <div class="output-row">
+            <span class="output-label">Unix Sekunden</span>
+            <span class="output-value" id="outUnixSec">—</span>
+            <button class="copy-btn" data-copy-target="outUnixSec" title="Kopieren"><i class="bi bi-clipboard"></i></button>
+          </div>
+          <div class="output-row">
+            <span class="output-label">Unix Millisekunden</span>
+            <span class="output-value" id="outUnixMs">—</span>
+            <button class="copy-btn" data-copy-target="outUnixMs" title="Kopieren"><i class="bi bi-clipboard"></i></button>
+          </div>
+          <div class="output-row">
+            <span class="output-label">YYYY-MM-DD HH:MM:ss</span>
+            <span class="output-value" id="outDateTime">—</span>
+            <button class="copy-btn" data-copy-target="outDateTime" title="Kopieren"><i class="bi bi-clipboard"></i></button>
+          </div>
+          <div class="output-row">
+            <span class="output-label">YYYY-MM-DD</span>
+            <span class="output-value" id="outDate">—</span>
+            <button class="copy-btn" data-copy-target="outDate" title="Kopieren"><i class="bi bi-clipboard"></i></button>
+          </div>
+          <div class="output-row">
+            <span class="output-label">YYYYMMDDHHMMss</span>
+            <span class="output-value" id="outCompact14">—</span>
+            <button class="copy-btn" data-copy-target="outCompact14" title="Kopieren"><i class="bi bi-clipboard"></i></button>
+          </div>
+          <div class="output-row">
+            <span class="output-label">YYYYMMDD</span>
+            <span class="output-value" id="outCompact8">—</span>
+            <button class="copy-btn" data-copy-target="outCompact8" title="Kopieren"><i class="bi bi-clipboard"></i></button>
+          </div>
+          <div class="output-row">
+            <span class="output-label">ISO 8601</span>
+            <span class="output-value" id="outISO">—</span>
+            <button class="copy-btn" data-copy-target="outISO" title="Kopieren"><i class="bi bi-clipboard"></i></button>
+          </div>
+          <div class="output-row">
+            <span class="output-label">UTC</span>
+            <span class="output-value" id="outUTC">—</span>
+            <button class="copy-btn" data-copy-target="outUTC" title="Kopieren"><i class="bi bi-clipboard"></i></button>
+          </div>
+          <div class="output-row">
+            <span class="output-label">Lokal</span>
+            <span class="output-value" id="outLocal">—</span>
+            <button class="copy-btn" data-copy-target="outLocal" title="Kopieren"><i class="bi bi-clipboard"></i></button>
+          </div>
+          <div class="output-row">
+            <span class="output-label">Relativ</span>
+            <span class="output-value" id="outRelative">—</span>
+            <span style="width: 24px;"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spalte B – jetzt inklusive Zeitraum -->
+    <div class="col-12 col-lg-6">
+      <div class="punkt-column">
+        <div class="mb-2">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="input-group-label">⏺ Zeitpunkt B</div>
+            <button class="btn btn-sm" id="btnBnow" style="background: transparent; border: 1px solid var(--border-subtle); color: var(--neon); font-size: 0.7rem; padding: 0.15rem 0.7rem; border-radius: 20px;">B = jetzt</button>
+          </div>
+          <input type="text" class="timestamp-input" id="inputB" placeholder="z.B. +3d 4h, 1737000000, 2025-12-24 …" autocomplete="off" spellcheck="false">
+        </div>
+        <div id="errorB" class="error-hint"></div>
+
+        <!-- Ausgabe B + Zeitraum zusammengeführt -->
+        <div class="output-card" id="outputCardB">
+          <div class="output-row">
+            <span class="output-label">Zeitraum (Unix Sec.)</span>
+            <span class="output-value" id="outRangeUnix">—</span>
+            <button class="copy-btn" data-copy-target="outRangeUnix" title="Kopieren"><i class="bi bi-clipboard"></i></button>
+          </div>
+
+          <div class="range-divider">Zeitraum A ↔ B</div>
+
+          <div class="output-row">
+            <span class="output-label">Differenz</span>
+            <span class="output-value" id="rangeDiff">—</span>
+            <span style="width: 24px;"></span>
+          </div>
+          <div class="output-row">
+            <span class="output-label">Differenz Unix Sek.</span>
+            <span class="output-value" id="rangeUnixSec">—</span>
+            <span style="width: 24px;"></span>
+          </div>
+          <div class="output-row">
+            <span class="output-label">Differenz Unix Ms.</span>
+            <span class="output-value" id="rangeUnixMs">—</span>
+            <span style="width: 24px;"></span>
+          </div>
+          <div class="output-row">
+            <span class="output-label">Richtung</span>
+            <span class="output-value" id="rangeDirection">—</span>
+            <span style="width: 24px;"></span>
+          </div>
+          <div class="output-row">
+            <span class="output-label">A (Kurz)</span>
+            <span class="output-value" id="rangeA">—</span>
+            <span style="width: 24px;"></span>
+          </div>
+          <div class="output-row">
+            <span class="output-label">B (Kurz)</span>
+            <span class="output-value" id="rangeB">—</span>
+            <span style="width: 24px;"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== JAVASCRIPT ========== -->
+<script>
+  /* =========================================================================
+     MODUL: Parser
+     Zweck: Auto-Erkennung von Zeitpunkt-Eingaben (Unix, ISO, relative Angaben)
+     Öffentliche API: Parser.parse(input) → Timestamp in ms | null
+     WICHTIG: Datums-/Zeitangaben ohne TZ werden als LOKALE Zeit interpretiert.
+     ========================================================================= */
+  const Parser = (function() {
+    'use strict';
+
+    function parseRelative(str) {
+      const s = str.trim().toLowerCase();
+      if (s === 'now' || s === 'jetzt') {
+        return Date.now();
+      }
+
+      const germanAgo = s.match(/^vor\s+(\d+)\s*(sekunden?|minuten?|stunden?|tage?n?|wochen?)$/);
+      if (germanAgo) {
+        const num = parseInt(germanAgo[1], 10);
+        const ms = unitToMs(germanAgo[2]);
+        if (ms === null) return null;
+        return Date.now() - num * ms;
+      }
+      const germanIn = s.match(/^in\s+(\d+)\s*(sekunden?|minuten?|stunden?|tage?n?|wochen?)$/);
+      if (germanIn) {
+        const num = parseInt(germanIn[1], 10);
+        const ms = unitToMs(germanIn[2]);
+        if (ms === null) return null;
+        return Date.now() + num * ms;
+      }
+
+      const tokens = s.match(/[+-]?\d+\s*(?:ms|s|m|h|d|w|sek|min|std|tag|woche)?/gi);
+      if (!tokens) return null;
+
+      let totalMs = 0;
+      let matched = false;
+
+      for (const token of tokens) {
+        const m = token.match(/^([+-]?\d+)\s*(ms|s|m|h|d|w|sek|min|std|tag|woche)?/i);
+        if (!m) continue;
+        const num = parseInt(m[1], 10);
+        let unit = (m[2] || 'ms').toLowerCase();
+        if (unit === 'sek') unit = 's';
+        if (unit === 'min') unit = 'm';
+        if (unit === 'std') unit = 'h';
+        if (unit === 'tag') unit = 'd';
+        if (unit === 'woche') unit = 'w';
+
+        const msFactor = unitToMs(unit);
+        if (msFactor === null) return null;
+
+        const sign = num < 0 ? -1 : (token.trim().startsWith('+') ? 1 : (token.trim().startsWith('-') ? -1 : 1));
+        totalMs += sign * Math.abs(num) * msFactor;
+        matched = true;
+      }
+
+      if (matched) return Date.now() + totalMs;
+      return null;
+    }
+
+    function unitToMs(unit) {
+      const map = {
+        'ms': 1, 's': 1000, 'm': 60000, 'h': 3600000,
+        'd': 86400000, 'w': 604800000
+      };
+      return map[unit] || null;
+    }
+
+    function parseUnixDigits(digits) {
+      if (digits.length === 10) return parseInt(digits, 10) * 1000;
+      if (digits.length === 13) return parseInt(digits, 10);
+      return null;
+    }
+
+    function parseCompact8(digits) {
+      if (digits.length !== 8) return null;
+      const y = parseInt(digits.slice(0, 4), 10);
+      const m = parseInt(digits.slice(4, 6), 10) - 1;
+      const d = parseInt(digits.slice(6, 8), 10);
+      const date = new Date(y, m, d);
+      return isNaN(date.getTime()) ? null : date.getTime();
+    }
+
+    function parseCompact14(digits) {
+      if (digits.length !== 14) return null;
+      const y = parseInt(digits.slice(0, 4), 10);
+      const mo = parseInt(digits.slice(4, 6), 10) - 1;
+      const d = parseInt(digits.slice(6, 8), 10);
+      const h = parseInt(digits.slice(8, 10), 10);
+      const mi = parseInt(digits.slice(10, 12), 10);
+      const s = parseInt(digits.slice(12, 14), 10);
+      const date = new Date(y, mo, d, h, mi, s);
+      return isNaN(date.getTime()) ? null : date.getTime();
+    }
+
+    function parseDateTime(str) {
+      const cleaned = str.replace('T', ' ').trim();
+      const m = cleaned.match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+      if (!m) return null;
+      const y = parseInt(m[1], 10);
+      const mo = parseInt(m[2], 10) - 1;
+      const d = parseInt(m[3], 10);
+      const h = m[4] ? parseInt(m[4], 10) : 0;
+      const mi = m[5] ? parseInt(m[5], 10) : 0;
+      const s = m[6] ? parseInt(m[6], 10) : 0;
+      const date = new Date(y, mo, d, h, mi, s);
+      return isNaN(date.getTime()) ? null : date.getTime();
+    }
+
+    function parseDateOnly(str) {
+      const m = str.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!m) return null;
+      const y = parseInt(m[1], 10);
+      const mo = parseInt(m[2], 10) - 1;
+      const d = parseInt(m[3], 10);
+      const date = new Date(y, mo, d);
+      return isNaN(date.getTime()) ? null : date.getTime();
+    }
+
+    function parse(input) {
+      if (!input || typeof input !== 'string') return null;
+      const trimmed = input.trim();
+      if (trimmed === '') return null;
+
+      const rel = parseRelative(trimmed);
+      if (rel !== null) return rel;
+
+      if (/^\d+$/.test(trimmed)) {
+        const digits = trimmed;
+        if (digits.length === 10 || digits.length === 13) return parseUnixDigits(digits);
+        if (digits.length === 8) return parseCompact8(digits);
+        if (digits.length === 14) return parseCompact14(digits);
+        return null;
+      }
+
+      const dateTime = parseDateTime(trimmed);
+      if (dateTime !== null) return dateTime;
+
+      const dateOnly = parseDateOnly(trimmed);
+      if (dateOnly !== null) return dateOnly;
+
+      return null;
+    }
+
+    return { parse };
+  })();
+
+  /* =========================================================================
+     MODUL: Formatter
+     Zweck: Erzeugt alle Ausgabedarstellungen aus einem Timestamp (ms)
+     Öffentliche API: Formatter.formatAll(ms), Formatter.relativeShort(iso)
+     ========================================================================= */
+  const Formatter = (function() {
+    'use strict';
+
+    function pad(n, len = 2) {
+      return String(n).padStart(len, '0');
+    }
+
+    function formatAll(ms) {
+      const date = new Date(ms);
+      const unixSec = Math.floor(ms / 1000);
+      const unixMs = ms;
+
+      const yyyy = date.getFullYear();
+      const mm = pad(date.getMonth() + 1);
+      const dd = pad(date.getDate());
+      const hh = pad(date.getHours());
+      const min = pad(date.getMinutes());
+      const ss = pad(date.getSeconds());
+
+      const dateTime = `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+      const dateOnly = `${yyyy}-${mm}-${dd}`;
+      const compact14 = `${yyyy}${mm}${dd}${hh}${min}${ss}`;
+      const compact8 = `${yyyy}${mm}${dd}`;
+
+      const iso = date.toISOString();
+      const utc = date.toUTCString();
+
+      const local = date.toLocaleString('de-DE', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        timeZoneName: 'short'
+      });
+
+      const relative = relativeFromMs(Date.now() - ms);
+
+      return {
+        unixSec: String(unixSec),
+        unixMs: String(unixMs),
+        dateTime, dateOnly, compact14, compact8,
+        iso, utc, local, relative
+      };
+    }
+
+    function relativeFromMs(diffMs) {
+      const abs = Math.abs(diffMs);
+      const future = diffMs < 0;
+      const seconds = Math.floor(abs / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+
+      let val, unit;
+      if (days > 0) { val = days; unit = 'Tag' + (days !== 1 ? 'en' : ''); }
+      else if (hours > 0) { val = hours; unit = 'Std.'; }
+      else if (minutes > 0) { val = minutes; unit = 'Min.'; }
+      else { val = seconds; unit = 'Sek.'; }
+
+      return future ? `in ${val} ${unit}` : `vor ${val} ${unit}`;
+    }
+
+    function relativeShort(isoString) {
+      const ms = new Date(isoString).getTime();
+      if (isNaN(ms)) return '—';
+      const diff = Date.now() - ms;
+      const abs = Math.abs(diff);
+      const sec = Math.floor(abs / 1000);
+      const min = Math.floor(sec / 60);
+      const hr = Math.floor(min / 60);
+      const day = Math.floor(hr / 24);
+      let val, unit;
+      if (day > 0) { val = day; unit = 'Tg.'; }
+      else if (hr > 0) { val = hr; unit = 'Std.'; }
+      else if (min > 0) { val = min; unit = 'Min.'; }
+      else { val = sec; unit = 'Sek.'; }
+      return diff > 0 ? `vor ${val} ${unit}` : `in ${val} ${unit}`;
+    }
+
+    return { formatAll, relativeShort };
+  })();
+
+  /* =========================================================================
+     MODUL: History
+     Zweck: localStorage-Verwaltung (Key: "timestampTool")
+     Öffentliche API: History.add(raw, resolvedISO), History.get(), History.clear()
+     ========================================================================= */
+  const History = (function() {
+    'use strict';
+    const STORAGE_KEY = 'timestampTool';
+    const MAX_ENTRIES = 20;
+
+    let history = [];
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          history = JSON.parse(raw);
+          if (!Array.isArray(history)) history = [];
+        } else {
+          history = [];
+        }
+      } catch (e) {
+        history = [];
+      }
+      if (history.length > MAX_ENTRIES) history = history.slice(0, MAX_ENTRIES);
+    }
+
+    function save() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+      } catch (e) { /* ignore */ }
+    }
+
+    function add(raw, resolvedISO) {
+      if (!raw || !resolvedISO) return;
+      const usedAt = new Date().toISOString();
+      history = history.filter(e => e.resolved !== resolvedISO);
+      history.unshift({ raw, resolved: resolvedISO, usedAt });
+      if (history.length > MAX_ENTRIES) history = history.slice(0, MAX_ENTRIES);
+      save();
+    }
+
+    function get() { return [...history]; }
+    function clear() { history = []; save(); }
+
+    load();
+    return { add, get, clear };
+  })();
+
+  /* =========================================================================
+     MODUL: Clipboard
+     Zweck: Kopieren mit Fallback
+     Öffentliche API: Clipboard.copy(text)
+     ========================================================================= */
+  const Clipboard = (function() {
+    'use strict';
+
+    async function copy(text) {
+      if (!text || text === '—') return false;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+      } catch (e) { /* fallback */ }
+
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    return { copy };
+  })();
+
+  /* =========================================================================
+     MODUL: UI
+     Zweck: Rendering, Event-Binding, Fokus-Tracking, History-Dropdown
+     Öffentliche API: UI.init()
+     ========================================================================= */
+  const UI = (function() {
+    'use strict';
+
+    const inputA = document.getElementById('inputA');
+    const inputB = document.getElementById('inputB');
+    const errorA = document.getElementById('errorA');
+    const errorB = document.getElementById('errorB');
+
+    const unixSecValue = document.getElementById('unixSecValue');
+    const unixMsValue = document.getElementById('unixMsValue');
+    const localTimeValue = document.getElementById('localTimeValue');
+
+    const outUnixSec = document.getElementById('outUnixSec');
+    const outUnixMs = document.getElementById('outUnixMs');
+    const outDateTime = document.getElementById('outDateTime');
+    const outDate = document.getElementById('outDate');
+    const outCompact14 = document.getElementById('outCompact14');
+    const outCompact8 = document.getElementById('outCompact8');
+    const outISO = document.getElementById('outISO');
+    const outUTC = document.getElementById('outUTC');
+    const outLocal = document.getElementById('outLocal');
+    const outRelative = document.getElementById('outRelative');
+    const outRangeUnix = document.getElementById('outRangeUnix');
+
+    const rangeDiff = document.getElementById('rangeDiff');
+    const rangeUnixSec = document.getElementById('rangeUnixSec');
+    const rangeUnixMs = document.getElementById('rangeUnixMs');
+    const rangeDirection = document.getElementById('rangeDirection');
+    const rangeA = document.getElementById('rangeA');
+    const rangeB = document.getElementById('rangeB');
+
+    const btnAnow = document.getElementById('btnAnow');
+    const btnBnow = document.getElementById('btnBnow');
+    const historyToggleBtn = document.getElementById('historyToggleBtn');
+    const historyDropdown = document.getElementById('historyDropdown');
+
+    let lastFocusedInput = inputA;
+
+    // Debounce-Timer für History (3 Sekunden, getrennt pro Feld)
+    let historyDebounceTimerA = null;
+    let historyDebounceTimerB = null;
+
+    function init() {
+      inputA.addEventListener('focus', () => { lastFocusedInput = inputA; });
+      inputB.addEventListener('focus', () => { lastFocusedInput = inputB; });
+
+      inputA.addEventListener('input', onInputA);
+      inputB.addEventListener('input', onInputB);
+
+      btnAnow.addEventListener('click', () => {
+        inputA.value = 'now';
+        lastFocusedInput = inputA;
+        onInputA();
+        inputA.focus();
+      });
+      btnBnow.addEventListener('click', () => {
+        inputB.value = 'now';
+        lastFocusedInput = inputB;
+        onInputB();
+        inputB.focus();
+      });
+
+      document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', handleCopyClick);
+      });
+
+      historyToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        historyDropdown.classList.toggle('show');
+        if (historyDropdown.classList.contains('show')) {
+          renderHistoryDropdown();
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!historyDropdown.contains(e.target) && e.target !== historyToggleBtn && !historyToggleBtn.contains(e.target)) {
+          historyDropdown.classList.remove('show');
+        }
+      });
+
+      document.querySelectorAll('.live-metric').forEach(el => {
+        el.addEventListener('click', () => {
+          const valueEl = el.querySelector('.value');
+          if (!valueEl) return;
+          const text = valueEl.textContent;
+          if (text && text !== '—') {
+            lastFocusedInput.value = text;
+            lastFocusedInput.dispatchEvent(new Event('input', { bubbles: true }));
+            lastFocusedInput.focus();
+          }
+        });
+      });
+
+      updateLiveHeader();
+      setInterval(updateLiveHeader, 200);
+
+      clearOutputA();
+      clearRangeOutput();
+      outRangeUnix.textContent = '—';
+
+      inputA.value = '';
+      inputB.value = '';
+    }
+
+    function updateLiveHeader() {
+      const now = Date.now();
+      unixSecValue.textContent = Math.floor(now / 1000);
+      unixMsValue.textContent = now;
+      localTimeValue.textContent = new Date(now).toLocaleTimeString('de-DE', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+    }
+
+    function onInputA() {
+      const raw = inputA.value;
+      const timestamp = Parser.parse(raw);
+      if (timestamp !== null) {
+        errorA.textContent = '';
+        renderOutputA(timestamp);
+        scheduleHistory('A', raw, timestamp);
+        updateRange();
+      } else {
+        errorA.textContent = raw.trim() ? '⚠ Ungültiges Format' : '';
+        clearOutputA();
+        updateRange();
+      }
+    }
+
+    function onInputB() {
+      const raw = inputB.value;
+      const timestamp = Parser.parse(raw);
+      if (timestamp !== null) {
+        errorB.textContent = '';
+        updateRange();
+        scheduleHistory('B', raw, timestamp);
+      } else {
+        errorB.textContent = raw.trim() ? '⚠ Ungültiges Format' : '';
+        updateRange();
+      }
+    }
+
+    function scheduleHistory(which, raw, timestamp) {
+      if (which === 'A') {
+        if (historyDebounceTimerA) clearTimeout(historyDebounceTimerA);
+      } else {
+        if (historyDebounceTimerB) clearTimeout(historyDebounceTimerB);
+      }
+
+      const timer = setTimeout(() => {
+        const iso = new Date(timestamp).toISOString();
+        History.add(raw, iso);
+        if (historyDropdown.classList.contains('show')) {
+          renderHistoryDropdown();
+        }
+      }, 3000);
+
+      if (which === 'A') historyDebounceTimerA = timer;
+      else historyDebounceTimerB = timer;
+    }
+
+    function renderOutputA(ms) {
+      const fmt = Formatter.formatAll(ms);
+      outUnixSec.textContent = fmt.unixSec;
+      outUnixMs.textContent = fmt.unixMs;
+      outDateTime.textContent = fmt.dateTime;
+      outDate.textContent = fmt.dateOnly;
+      outCompact14.textContent = fmt.compact14;
+      outCompact8.textContent = fmt.compact8;
+      outISO.textContent = fmt.iso;
+      outUTC.textContent = fmt.utc;
+      outLocal.textContent = fmt.local;
+      outRelative.textContent = fmt.relative;
+    }
+
+    function clearOutputA() {
+      outUnixSec.textContent = '—';
+      outUnixMs.textContent = '—';
+      outDateTime.textContent = '—';
+      outDate.textContent = '—';
+      outCompact14.textContent = '—';
+      outCompact8.textContent = '—';
+      outISO.textContent = '—';
+      outUTC.textContent = '—';
+      outLocal.textContent = '—';
+      outRelative.textContent = '—';
+    }
+
+    function updateRange() {
+      const rawA = inputA.value;
+      const rawB = inputB.value;
+      const tsA = Parser.parse(rawA);
+      const tsB = Parser.parse(rawB);
+
+      if (tsA === null || tsB === null) {
+        clearRangeOutput();
+        outRangeUnix.textContent = '—';
+        return;
+      }
+
+      const aSec = Math.floor(tsA / 1000);
+      const bSec = Math.floor(tsB / 1000);
+      outRangeUnix.textContent = `${aSec} AND ${bSec}`;
+
+      const diffMs = tsB - tsA;
+      const absMs = Math.abs(diffMs);
+      const diffSec = Math.floor(absMs / 1000);
+      const diffMin = Math.floor(diffSec / 60);
+      const diffHours = Math.floor(diffMin / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      let diffStr = '';
+      if (diffDays > 0) diffStr += `${diffDays} Tg. `;
+      if (diffHours % 24 > 0) diffStr += `${diffHours % 24} Std. `;
+      if (diffMin % 60 > 0) diffStr += `${diffMin % 60} Min. `;
+      diffStr += `${diffSec % 60} Sek.`;
+      diffStr = diffStr.trim() || '0 Sek.';
+
+      rangeDiff.textContent = diffStr;
+      rangeUnixSec.textContent = diffSec + ' s';
+      rangeUnixMs.textContent = absMs + ' ms';
+
+      if (diffMs > 0) {
+        rangeDirection.innerHTML = `<span class="direction-badge">B liegt ${relativeDirection(absMs)} nach A</span>`;
+      } else if (diffMs < 0) {
+        rangeDirection.innerHTML = `<span class="direction-badge">B liegt ${relativeDirection(absMs)} vor A</span>`;
+      } else {
+        rangeDirection.innerHTML = `<span class="direction-badge">A und B sind identisch</span>`;
+      }
+
+      const fmtA = Formatter.formatAll(tsA);
+      const fmtB = Formatter.formatAll(tsB);
+      rangeA.textContent = `${fmtA.dateTime} (${fmtA.unixSec} s)`;
+      rangeB.textContent = `${fmtB.dateTime} (${fmtB.unixSec} s)`;
+    }
+
+    function relativeDirection(absMs) {
+      const sec = Math.floor(absMs / 1000);
+      const min = Math.floor(sec / 60);
+      const hr = Math.floor(min / 60);
+      const day = Math.floor(hr / 24);
+      if (day > 0) return `${day} Tag${day !== 1 ? 'en' : ''}`;
+      if (hr > 0) return `${hr} Stunde${hr !== 1 ? 'n' : ''}`;
+      if (min > 0) return `${min} Minute${min !== 1 ? 'n' : ''}`;
+      return `${sec} Sekunde${sec !== 1 ? 'n' : ''}`;
+    }
+
+    function clearRangeOutput() {
+      rangeDiff.textContent = '—';
+      rangeUnixSec.textContent = '—';
+      rangeUnixMs.textContent = '—';
+      rangeDirection.textContent = '—';
+      rangeA.textContent = '—';
+      rangeB.textContent = '—';
+    }
+
+    async function handleCopyClick(e) {
+      const btn = e.currentTarget;
+      const targetId = btn.getAttribute('data-copy-target');
+      if (!targetId) return;
+      const targetEl = document.getElementById(targetId);
+      if (!targetEl) return;
+      const text = targetEl.textContent;
+      if (!text || text === '—') return;
+
+      const success = await Clipboard.copy(text);
+      if (success) {
+        btn.classList.add('copied');
+        btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<i class="bi bi-clipboard"></i>';
+        }, 1200);
+      }
+    }
+
+    function renderHistoryDropdown() {
+      const entries = History.get();
+      if (entries.length === 0) {
+        historyDropdown.innerHTML = `
+          <div class="history-item" style="color: var(--text-secondary); text-align: center; padding: 1rem; cursor: default;">
+            Kein Verlauf
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      entries.forEach((entry) => {
+        const resolvedLocal = formatLocalForDisplay(entry.resolved);
+        const rel = Formatter.relativeShort(entry.resolved);
+        html += `
+          <div class="history-item" data-resolved="${entry.resolved}">
+            <div class="raw">${escapeHtml(entry.raw)}</div>
+            <div class="meta">
+              <span class="resolved">${resolvedLocal}<span class="tz">lokal</span></span>
+              <span>${rel}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `<div class="history-clear" id="historyClearBtn">Verlauf löschen</div>`;
+      historyDropdown.innerHTML = html;
+
+      historyDropdown.querySelectorAll('.history-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const resolvedISO = el.getAttribute('data-resolved');
+          if (!resolvedISO) return;
+          const localForInput = formatLocalForInput(resolvedISO);
+          lastFocusedInput.value = localForInput;
+          lastFocusedInput.dispatchEvent(new Event('input', { bubbles: true }));
+          lastFocusedInput.focus();
+          historyDropdown.classList.remove('show');
+        });
+      });
+
+      const clearBtn = document.getElementById('historyClearBtn');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          History.clear();
+          renderHistoryDropdown();
+        });
+      }
+    }
+
+    function formatLocalForDisplay(isoString) {
+      const d = new Date(isoString);
+      if (isNaN(d.getTime())) return '—';
+      const pad = n => String(n).padStart(2, '0');
+      return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function formatLocalForInput(isoString) {
+      const d = new Date(isoString);
+      if (isNaN(d.getTime())) return '';
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+             `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    return { init };
+  })();
+
+  document.addEventListener('DOMContentLoaded', () => {
+    UI.init();
+  });
+
+</script>
+</body>
+</html>
