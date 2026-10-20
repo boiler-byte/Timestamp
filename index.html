@@ -495,7 +495,7 @@
             <div class="input-group-label">⏺ Zeitpunkt B</div>
             <button class="btn btn-sm" id="btnBnow" style="background: transparent; border: 1px solid var(--border-subtle); color: var(--neon); font-size: 0.7rem; padding: 0.15rem 0.7rem; border-radius: 20px;">B = jetzt</button>
           </div>
-          <input type="text" class="timestamp-input" id="inputB" placeholder="z.B. +3d 4h, 1737000000, 2025-12-24 …" autocomplete="off" spellcheck="false">
+          <input type="text" class="timestamp-input" id="inputB" placeholder="+3d (ab A), now +3d, 1737000000 …" autocomplete="off" spellcheck="false">
         </div>
         <div id="errorB" class="error-hint"></div>
 
@@ -557,8 +557,9 @@
   const Parser = (function() {
     'use strict';
 
-    function parseRelative(str) {
-      const s = str.trim().toLowerCase();
+    function parseRelative(str, baseMs = Date.now()) {
+      let s = str.trim().toLowerCase();
+      s = s.replace(/^(now|jetzt)\s+(?=[+-]\d)/, '');
       if (s === 'now' || s === 'jetzt') {
         return Date.now();
       }
@@ -568,49 +569,38 @@
         const num = parseInt(germanAgo[1], 10);
         const ms = unitToMs(germanAgo[2]);
         if (ms === null) return null;
-        return Date.now() - num * ms;
+        return baseMs - num * ms;
       }
       const germanIn = s.match(/^in\s+(\d+)\s*(sekunden?|minuten?|stunden?|tage?n?|wochen?)$/);
       if (germanIn) {
         const num = parseInt(germanIn[1], 10);
         const ms = unitToMs(germanIn[2]);
         if (ms === null) return null;
-        return Date.now() + num * ms;
+        return baseMs + num * ms;
       }
 
-      const tokens = s.match(/[+-]?\d+\s*(?:ms|s|m|h|d|w|sek|min|std|tag|woche)?/gi);
-      if (!tokens) return null;
-
+      // Relative Eingaben brauchen zwingend eine Einheit; nackte Zahlen sind keine Dauer.
+      const units = { ms: 1, s: 1000, sek: 1000, m: 60000, min: 60000,
+        h: 3600000, std: 3600000, d: 86400000, tag: 86400000,
+        w: 604800000, woche: 604800000 };
+      const pattern = /([+-]?\d+)\s*(ms|sek|std|min|tag|woche|s|m|h|d|w)(?![a-z])/gi;
       let totalMs = 0;
+      let pos = 0;
       let matched = false;
-
-      for (const token of tokens) {
-        const m = token.match(/^([+-]?\d+)\s*(ms|s|m|h|d|w|sek|min|std|tag|woche)?/i);
-        if (!m) continue;
-        const num = parseInt(m[1], 10);
-        let unit = (m[2] || 'ms').toLowerCase();
-        if (unit === 'sek') unit = 's';
-        if (unit === 'min') unit = 'm';
-        if (unit === 'std') unit = 'h';
-        if (unit === 'tag') unit = 'd';
-        if (unit === 'woche') unit = 'w';
-
-        const msFactor = unitToMs(unit);
-        if (msFactor === null) return null;
-
-        const sign = num < 0 ? -1 : (token.trim().startsWith('+') ? 1 : (token.trim().startsWith('-') ? -1 : 1));
-        totalMs += sign * Math.abs(num) * msFactor;
+      for (const match of s.matchAll(pattern)) {
+        if (s.slice(pos, match.index).trim() !== '') return null;
+        totalMs += Number(match[1]) * units[match[2].toLowerCase()];
+        pos = match.index + match[0].length;
         matched = true;
       }
-
-      if (matched) return Date.now() + totalMs;
-      return null;
+      if (!matched || s.slice(pos).trim() !== '') return null;
+      return baseMs + totalMs;
     }
 
     function unitToMs(unit) {
       const map = {
         'ms': 1, 's': 1000, 'm': 60000, 'h': 3600000,
-        'd': 86400000, 'w': 604800000
+        'd': 86400000, 'w': 604800000, 'sek': 1000, 'min': 60000, 'std': 3600000, 'tag': 86400000, 'woche': 604800000
       };
       return map[unit] || null;
     }
@@ -666,13 +656,10 @@
       return isNaN(date.getTime()) ? null : date.getTime();
     }
 
-    function parse(input) {
+    function parse(input, baseMs = Date.now()) {
       if (!input || typeof input !== 'string') return null;
       const trimmed = input.trim();
       if (trimmed === '') return null;
-
-      const rel = parseRelative(trimmed);
-      if (rel !== null) return rel;
 
       if (/^\d+$/.test(trimmed)) {
         const digits = trimmed;
@@ -680,6 +667,14 @@
         if (digits.length === 8) return parseCompact8(digits);
         if (digits.length === 14) return parseCompact14(digits);
         return null;
+      }
+
+      const rel = parseRelative(trimmed, baseMs);
+      if (rel !== null) return rel;
+
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/i.test(trimmed)) {
+        const isoMs = Date.parse(trimmed);
+        return Number.isNaN(isoMs) ? null : isoMs;
       }
 
       const dateTime = parseDateTime(trimmed);
@@ -905,6 +900,9 @@
     const historyDropdown = document.getElementById('historyDropdown');
 
     let lastFocusedInput = inputA;
+    // Eingaben einmalig aufloesen; keine erneute Auswertung relativ zu Date.now().
+    let fixedA = null;
+    let fixedB = null;
 
     // Debounce-Timer für History (3 Sekunden, getrennt pro Feld)
     let historyDebounceTimerA = null;
@@ -981,28 +979,43 @@
       });
     }
 
+    // Relative Eingaben bleiben sichtbar; nur ihr berechneter Wert wird gespeichert.
+    function isOffset(raw) {
+      return /^[+-]\d+\s*(?:ms|sek|std|min|tag|woche|s|m|h|d|w)(?:\s|$)/i.test(raw.trim());
+    }
+
+    function resolveB() {
+      const raw = inputB.value.trim();
+      if (isOffset(raw) && fixedA !== null) {
+        return Parser.parse(raw, fixedA);
+      }
+      if (isOffset(raw) && fixedA === null) return null;
+      return Parser.parse(raw);
+    }
+
     function onInputA() {
       const raw = inputA.value;
-      const timestamp = Parser.parse(raw);
-      if (timestamp !== null) {
+      fixedA = Parser.parse(raw);
+      if (fixedA !== null) {
         errorA.textContent = '';
-        renderOutputA(timestamp);
-        scheduleHistory('A', raw, timestamp);
-        updateRange();
+        renderOutputA(fixedA);
+        scheduleHistory('A', raw, fixedA);
       } else {
         errorA.textContent = raw.trim() ? '⚠ Ungültiges Format' : '';
         clearOutputA();
-        updateRange();
       }
+      // Eine B-Eingabe wie +3d folgt dem neuen Wert von A.
+      if (isOffset(inputB.value)) fixedB = resolveB();
+      updateRange();
     }
 
     function onInputB() {
       const raw = inputB.value;
-      const timestamp = Parser.parse(raw);
-      if (timestamp !== null) {
+      fixedB = resolveB();
+      if (fixedB !== null) {
         errorB.textContent = '';
         updateRange();
-        scheduleHistory('B', raw, timestamp);
+        scheduleHistory('B', raw, fixedB);
       } else {
         errorB.textContent = raw.trim() ? '⚠ Ungültiges Format' : '';
         updateRange();
@@ -1058,8 +1071,8 @@
     function updateRange() {
       const rawA = inputA.value;
       const rawB = inputB.value;
-      const tsA = Parser.parse(rawA);
-      const tsB = Parser.parse(rawB);
+      const tsA = fixedA;
+      const tsB = fixedB;
 
       if (tsA === null || tsB === null) {
         clearRangeOutput();
