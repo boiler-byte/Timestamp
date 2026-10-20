@@ -3,1270 +3,1060 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>⏱️ Timestamp‑Tool · exzentrisch</title>
-  <!-- Bootstrap 5 CSS + Icons via CDN -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <title>Unix Timestamp Tool · Neon</title>
   <style>
-    /* ---------- EXZENTRISCHES DESIGN – eigene CSS-Variablen ---------- */
-    :root {
-      --bg-deep: #0b0f12;
-      --bg-surface: #12181c;
-      --bg-elevated: #1a2228;
-      --neon: #00ffc3;
-      --neon-dim: #00cc9e;
-      --neon-glow: 0 0 8px rgba(0, 255, 195, 0.5);
-      --text-primary: #e8f0f5;
-      --text-secondary: #9bb0bd;
-      --border-subtle: #2a3a44;
-      --danger: #ff6b6b;
-      --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Roboto Mono', monospace;
-    }
-
+    /* ---------- RESET / BASE ---------- */
     * {
+      margin: 0;
+      padding: 0;
       box-sizing: border-box;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     body {
-      background-color: var(--bg-deep);
-      color: var(--text-primary);
-      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-      font-size: 0.95rem;
-      line-height: 1.5;
-      margin: 0;
-      padding: 0;
       min-height: 100vh;
-      /* dezenter Hintergrund-Raster-Effekt */
-      background-image:
-        linear-gradient(rgba(0, 255, 195, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 255, 195, 0.02) 1px, transparent 1px);
-      background-size: 40px 40px;
+      background: #0a0c0f;
+      background-image: radial-gradient(circle at 20% 20%, rgba(0, 255, 255, 0.08) 0%, transparent 30%),
+                        radial-gradient(circle at 80% 70%, rgba(255, 0, 255, 0.08) 0%, transparent 35%);
+      color: #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      padding: 1.2rem;
     }
 
-    /* ---------- HEADER – schmaler Live-Streifen ---------- */
-    .live-header {
-      background: var(--bg-surface);
-      border-bottom: 1px solid var(--border-subtle);
-      padding: 0.35rem 1rem;
+    /* ---------- SCROLLBAR (global) ---------- */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #12161c;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2a3a4a;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00ffff66;
+    }
+
+    /* ---------- TOPBAR ---------- */
+    .topbar {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 1rem 1.5rem;
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      backdrop-filter: blur(8px);
-      background: rgba(18, 24, 28, 0.92);
-    }
-
-    .live-header .live-metric {
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      cursor: pointer;
-      padding: 0.2rem 0.5rem;
-      border-radius: 6px;
-      transition: background 0.15s, box-shadow 0.15s;
-      white-space: nowrap;
-    }
-    .live-header .live-metric:hover {
-      background: var(--bg-elevated);
-      box-shadow: var(--neon-glow);
-    }
-    .live-header .live-metric .value {
-      color: var(--neon);
-      font-weight: 500;
-      letter-spacing: 0.02em;
-    }
-    .live-header .live-metric .label {
-      font-family: 'Inter', sans-serif;
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-secondary);
-    }
-
-    /* History Button rechts */
-    .history-btn {
-      margin-left: auto;
-      background: transparent;
-      border: 1px solid var(--border-subtle);
-      color: var(--text-primary);
-      border-radius: 20px;
-      padding: 0.2rem 1rem;
-      font-size: 0.8rem;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .history-btn:hover, .history-btn:focus {
-      border-color: var(--neon);
-      box-shadow: var(--neon-glow);
-      color: var(--neon);
-    }
-
-    /* ---------- HAUPT-CONTAINER ---------- */
-    .main-container {
-      max-width: 1200px;
-      margin: 1.5rem auto 2rem;
-      padding: 0 1.25rem;
-    }
-
-    /* ---------- EINGABEFELDER ---------- */
-    .timestamp-input {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 12px;
-      padding: 0.6rem 1rem;
-      color: var(--text-primary);
-      font-family: var(--font-mono);
-      font-size: 1.25rem;
-      font-weight: 400;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      width: 100%;
-    }
-    .timestamp-input:focus {
-      outline: none;
-      border-color: var(--neon);
-      box-shadow: var(--neon-glow);
-      background: var(--bg-elevated);
-    }
-    .timestamp-input::placeholder {
-      color: #4a5f6b;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 300;
-    }
-
-    .input-group-label {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-secondary);
-      margin-bottom: 0.3rem;
-      font-weight: 500;
-    }
-
-    /* ---------- AUSGABE-KARTEN ---------- */
-    .output-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 12px;
-      padding: 0.9rem 1rem;
-      margin-top: 1rem;
-    }
-
-    .output-row {
-      display: flex;
-      align-items: center;
       justify-content: space-between;
-      padding: 0.5rem 0.25rem;
-      border-bottom: 1px solid rgba(42, 58, 68, 0.5);
-      gap: 0.75rem;
-    }
-    .output-row:last-child {
-      border-bottom: none;
-    }
-    .output-label {
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-      font-weight: 400;
-      flex: 0 0 auto;
-      min-width: 140px;
-    }
-    .output-value {
-      font-family: var(--font-mono);
-      font-size: 0.95rem;
-      color: var(--neon);
-      letter-spacing: 0.02em;
-      flex: 1 1 auto;
-      word-break: break-all;
-      text-align: right;
-      padding-right: 0.25rem;
-    }
-    .copy-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-secondary);
-      font-size: 1rem;
-      padding: 0.2rem 0.4rem;
-      border-radius: 6px;
-      transition: color 0.15s, background 0.15s;
-      flex: 0 0 auto;
-    }
-    .copy-btn:hover {
-      color: var(--neon);
-      background: rgba(0, 255, 195, 0.1);
-    }
-    .copy-btn.copied {
-      color: var(--neon);
-      background: rgba(0, 255, 195, 0.2);
+      gap: 1rem;
+      background: rgba(10, 15, 22, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid #1e2a3a;
+      border-radius: 3rem;
+      padding: 0.6rem 1.6rem;
+      margin-bottom: 1.8rem;
+      box-shadow: 0 0 25px rgba(0, 255, 255, 0.15), 0 0 10px rgba(255, 0, 255, 0.1);
+      position: relative; /* Bezugspunkt für Dropdown */
+      z-index: 50;
     }
 
-    /* Relative Zeit & Hinweise */
-    .relative-badge {
-      display: inline-block;
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      color: var(--neon-dim);
-      background: rgba(0, 255, 195, 0.08);
-      padding: 0.2rem 0.7rem;
-      border-radius: 30px;
-      border: 1px solid rgba(0, 255, 195, 0.2);
-    }
-
-    .error-hint {
-      font-size: 0.8rem;
-      color: var(--danger);
-      padding: 0.4rem 0;
-      font-family: var(--font-mono);
-      opacity: 0.9;
-    }
-
-    /* ---------- ZEITRAUM (jetzt Teil der Output-Card B) ---------- */
-    .range-divider {
+    .live-clocks {
       display: flex;
+      flex-wrap: wrap;
+      gap: 1.2rem;
       align-items: center;
-      gap: 0.75rem;
-      margin: 0.75rem 0 0.5rem;
-      color: var(--text-secondary);
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-weight: 500;
-    }
-    .range-divider::before,
-    .range-divider::after {
-      content: '';
-      flex: 1 1 auto;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--border-subtle), transparent);
     }
 
-    .direction-badge {
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-      color: var(--neon);
-      background: rgba(0, 255, 195, 0.1);
-      padding: 0.15rem 0.7rem;
-      border-radius: 30px;
-      border: 1px solid var(--neon-dim);
-      display: inline-block;
+    .live-btn {
+      background: #0f141c;
+      border: 1px solid #2a3f55;
+      border-radius: 2rem;
+      padding: 0.45rem 1.2rem;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.95rem;
+      color: #b0e0ff;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
+      letter-spacing: 0.5px;
+    }
+
+    .live-btn:hover {
+      border-color: #00ffff;
+      box-shadow: 0 0 18px #00ffff88, 0 0 8px #ff00ff44;
+      color: #ffffff;
+      background: #14202e;
+    }
+
+    .live-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: #00ffff;
+      filter: drop-shadow(0 0 4px #00ffff);
+    }
+
+    .live-value {
+      font-weight: 600;
+    }
+
+    .history-toggle {
+      background: transparent;
+      border: 1px solid #ff00ff66;
+      border-radius: 2rem;
+      padding: 0.45rem 1.4rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #ffb3ff;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 0 12px #ff00ff33;
+      letter-spacing: 1px;
+    }
+
+    .history-toggle:hover {
+      background: #ff00ff18;
+      border-color: #ff00ff;
+      box-shadow: 0 0 24px #ff00ff88;
+      color: #ffffff;
     }
 
     /* ---------- HISTORY DROPDOWN ---------- */
-    .history-dropdown {
+    .history-panel {
       position: absolute;
-      right: 1rem;
-      top: calc(100% + 4px);
-      width: 360px;
-      max-height: 400px;
+      top: calc(100% + 0.6rem);
+      right: 1.6rem;
+      min-width: 300px;
+      max-width: calc(100vw - 2.4rem);
+      background: #0e131b;
+      border: 1px solid #2a3f55;
+      border-radius: 1.5rem;
+      padding: 1rem 1.2rem;
+      max-height: 300px;
       overflow-y: auto;
-      background: var(--bg-elevated);
-      border: 1px solid var(--border-subtle);
-      border-radius: 12px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0, 255, 195, 0.1);
-      z-index: 2000;
-      padding: 0.5rem 0;
       display: none;
+      box-shadow: 0 0 30px #00ffff33, 0 12px 40px #000000aa, inset 0 0 20px #00000080;
+      backdrop-filter: blur(8px);
+      z-index: 100;
+
+      /* Scrollbar im Dropdown ausblenden */
+      scrollbar-width: none;          /* Firefox */
+      -ms-overflow-style: none;       /* IE / Edge Legacy */
     }
-    .history-dropdown.show {
-      display: block;
-    }
-    .history-item {
-      padding: 0.5rem 1rem;
-      cursor: pointer;
-      border-bottom: 1px solid rgba(42, 58, 68, 0.5);
-      transition: background 0.15s;
-    }
-    .history-item:hover {
-      background: rgba(0, 255, 195, 0.06);
-    }
-    .history-item .raw {
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      color: var(--text-primary);
-      word-break: break-all;
-    }
-    .history-item .meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      font-size: 0.7rem;
-      color: var(--text-secondary);
-      margin-top: 0.2rem;
-      gap: 0.5rem;
-    }
-    .history-item .meta .resolved {
-      font-family: var(--font-mono);
-      color: var(--neon-dim);
-    }
-    .history-item .meta .resolved .tz {
-      color: var(--text-secondary);
-      font-style: italic;
-      margin-left: 0.15rem;
-    }
-    .history-clear {
-      padding: 0.6rem 1rem;
-      color: var(--danger);
-      font-size: 0.8rem;
-      cursor: pointer;
-      text-align: center;
-      border-top: 1px solid var(--border-subtle);
-      margin-top: 0.3rem;
-      font-weight: 500;
-      transition: background 0.15s;
-    }
-    .history-clear:hover {
-      background: rgba(255, 107, 107, 0.1);
+    .history-panel::-webkit-scrollbar {
+      display: none;                  /* Chrome / Safari / Edge */
+      width: 0;
+      height: 0;
     }
 
-    /* ---------- ZEITPUNKT-SPALTEN ---------- */
-    .punkt-column {
+    .history-panel.open {
+      display: block;
+      animation: dropdownFade 0.18s ease-out;
+    }
+
+    @keyframes dropdownFade {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .history-list {
+      list-style: none;
       display: flex;
       flex-direction: column;
-      height: 100%;
+      gap: 6px;
+    }
+
+    .history-item {
+      background: #111a24;
+      border-left: 4px solid #00ffff;
+      padding: 0.6rem 1rem;
+      border-radius: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      color: #b8e2ff;
+      cursor: pointer;
+      transition: 0.15s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid #1e2e3e;
+      box-shadow: 0 0 6px #00ffff22;
+    }
+
+    .history-item:hover {
+      background: #1a2a3a;
+      border-left-color: #ff00ff;
+      box-shadow: 0 0 16px #ff00ff44;
+      color: #ffffff;
+    }
+
+    .history-empty {
+      color: #6b7b8b;
+      font-style: italic;
+      padding: 0.8rem;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    /* ---------- GRID ---------- */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.8rem;
+      margin-bottom: 2rem;
+      margin: 0 auto 2rem;
+      max-width: 1200px;
+    }
+
+    /* ---------- CARD ---------- */
+    .card {
+      background: rgba(14, 20, 28, 0.75);
+      backdrop-filter: blur(4px);
+      border: 1px solid #223344;
+      border-radius: 2rem;
+      padding: 1.6rem 1.4rem;
+      box-shadow: 0 0 30px #00ffff11, inset 0 0 30px #00000066;
+      transition: box-shadow 0.3s;
+    }
+
+    .card:focus-within {
+      box-shadow: 0 0 40px #00ffff44, 0 0 15px #ff00ff22, inset 0 0 30px #00000066;
+      border-color: #2f5a7a;
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #7aa9cc;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #1e2f3f;
+      padding-bottom: 0.7rem;
+    }
+
+    .card h2 svg {
+      stroke: #00ffff;
+      filter: drop-shadow(0 0 6px #00ffff);
+    }
+
+    /* ---------- INPUT ---------- */
+    .input-group {
+      margin-bottom: 1.6rem;
+    }
+
+    .input-group input {
+      width: 100%;
+      background: #0b1118;
+      border: 1px solid #2a3f55;
+      border-radius: 2.5rem;
+      padding: 0.9rem 1.4rem;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 1rem;
+      color: #e0f0ff;
+      outline: none;
+      transition: 0.2s;
+      box-shadow: inset 0 0 15px #00000080, 0 0 6px #00ffff22;
+      letter-spacing: 0.5px;
+    }
+
+    .input-group input:focus {
+      border-color: #00ffff;
+      box-shadow: inset 0 0 15px #00000080, 0 0 20px #00ffff66, 0 0 8px #ff00ff44;
+      background: #0f1822;
+    }
+
+    .input-group input.invalid {
+      border-color: #ff3b6b;
+      box-shadow: inset 0 0 15px #00000080, 0 0 20px #ff3b6b88;
+      background: #1a0f14;
+    }
+
+    /* ---------- INFO LIST ---------- */
+    .info-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0d141d;
+      border-radius: 2rem;
+      padding: 0.45rem 0.9rem 0.45rem 1.2rem;
+      border: 1px solid #1a2b3a;
+      transition: 0.15s;
+      min-height: 2.8rem;
+    }
+
+    .info-row:hover {
+      border-color: #2f5a7a;
+      background: #111e2a;
+    }
+
+    .info-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      color: #7b9bb8;
+      flex: 0 0 auto;
+      width: 95px;
+    }
+
+    .info-value {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.9rem;
+      color: #b8e2ff;
+      text-align: right;
+      flex: 1;
+      padding: 0 0.8rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 500;
+      text-shadow: 0 0 6px #00ffff33;
+      letter-spacing: 0.3px;
+    }
+
+    .copy-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.2rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: 0.2s;
+      color: #3e6a8a;
+      flex: 0 0 30px;
+      height: 30px;
+      width: 30px;
+    }
+
+    .copy-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .copy-btn:hover {
+      color: #00ffff;
+      background: #00ffff18;
+      filter: drop-shadow(0 0 6px #00ffff);
+    }
+
+    .copy-btn.copied {
+      color: #00ffaa;
+      filter: drop-shadow(0 0 10px #00ffaa);
+    }
+
+    .copy-btn.copied svg {
+      stroke: #00ffaa;
     }
 
     /* ---------- RESPONSIVE ---------- */
-    @media (max-width: 991px) {
-      .output-row {
-        flex-wrap: wrap;
-        justify-content: flex-start;
-        gap: 0.25rem;
+    @media (max-width: 820px) {
+      .grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
       }
-      .output-value {
-        text-align: left;
-        width: 100%;
-        padding-left: 0;
+      .topbar {
+        border-radius: 1.8rem;
+        padding: 0.8rem 1.2rem;
+        justify-content: center;
       }
-      .output-label {
-        min-width: 120px;
-        font-size: 0.75rem;
+      .live-clocks {
+        justify-content: center;
       }
-      .live-header {
-        gap: 0.6rem 1rem;
-        padding: 0.3rem 0.75rem;
+      .info-label {
+        width: 80px;
+        font-size: 0.7rem;
       }
-      .live-header .live-metric {
-        font-size: 0.75rem;
+      .info-value {
+        font-size: 0.8rem;
       }
-      .history-dropdown {
-        width: calc(100vw - 2rem);
-        right: 0.5rem;
-      }
-      .main-container {
-        padding: 0 0.75rem;
+      .history-panel {
+        right: 0.8rem;
+        left: 0.8rem;
+        width: auto;
       }
     }
 
-    /* dezenter Trennstrich */
-    hr.neon-hr {
-      border: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--neon-dim), transparent);
-      opacity: 0.3;
-      margin: 1rem 0;
+    @media (max-width: 480px) {
+      body { padding: 0.8rem; }
+      .card { padding: 1.2rem 1rem; }
+      .live-btn { font-size: 0.8rem; padding: 0.4rem 0.9rem; }
+      .history-toggle { font-size: 0.8rem; padding: 0.4rem 1rem; }
+      .info-row { padding: 0.4rem 0.6rem 0.4rem 0.8rem; }
+      .info-label { width: 70px; font-size: 0.65rem; }
+      .info-value { font-size: 0.75rem; }
+      .copy-btn { flex: 0 0 26px; height: 26px; width: 26px; }
+      .copy-btn svg { width: 16px; height: 16px; }
     }
 
-    /* Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
+    /* ---------- ANIMATION ---------- */
+    @keyframes pulseGlow {
+      0% { text-shadow: 0 0 6px #00ffff55; }
+      50% { text-shadow: 0 0 16px #00ffffcc, 0 0 6px #ff00ff55; }
+      100% { text-shadow: 0 0 6px #00ffff55; }
     }
-    ::-webkit-scrollbar-track {
-      background: var(--bg-deep);
+
+    .live-value {
+      animation: pulseGlow 2s infinite;
     }
-    ::-webkit-scrollbar-thumb {
-      background: var(--border-subtle);
-      border-radius: 8px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--neon-dim);
-    }
+
+    /* ---------- UTILITY ---------- */
+    .hidden { display: none; }
   </style>
 </head>
 <body>
 
-<!-- ========== HEADER ========== -->
-<div class="live-header">
-  <div class="live-metric" id="liveUnixSec" title="Klick übernimmt in zuletzt fokussiertes Feld">
-    <span class="label">UNIX</span>
-    <span class="value" id="unixSecValue">—</span>
-    <span class="label">s</span>
+<!-- ========== TOPBAR ========== -->
+<div class="topbar">
+  <div class="live-clocks">
+    <button class="live-btn" id="unixLiveBtn" title="In Eingabefeld A oder letztes fokussiertes Feld einfügen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <span>Unixzeit:</span>
+      <span class="live-value" id="unixLiveValue">0</span>
+    </button>
+    <button class="live-btn" id="localLiveBtn" title="In Eingabefeld A oder letztes fokussiertes Feld einfügen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <span>Lokal:</span>
+      <span class="live-value" id="localLiveValue">--:--:--</span>
+    </button>
   </div>
-  <div class="live-metric" id="liveUnixMs" title="Klick übernimmt in zuletzt fokussiertes Feld">
-    <span class="label">UNIX</span>
-    <span class="value" id="unixMsValue">—</span>
-    <span class="label">ms</span>
-  </div>
-  <div class="live-metric" id="liveLocalTime" title="Klick übernimmt in zuletzt fokussiertes Feld">
-    <span class="label">LOKAL</span>
-    <span class="value" id="localTimeValue">—</span>
-  </div>
-  <button class="history-btn" id="historyToggleBtn" aria-label="Verlauf anzeigen">
-    <i class="bi bi-clock-history"></i> Verlauf
+  <button class="history-toggle" id="historyToggleBtn">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="12 8 12 12 16 14"/><circle cx="12" cy="12" r="10"/>
+    </svg>
+    Verlauf
   </button>
-  <!-- History Dropdown -->
-  <div class="history-dropdown" id="historyDropdown"></div>
+
+  <!-- ========== HISTORY DROPDOWN (jetzt innerhalb der Topbar) ========== -->
+  <div class="history-panel" id="historyPanel">
+    <ul class="history-list" id="historyList">
+      <li class="history-empty">Noch keine Einträge</li>
+    </ul>
+  </div>
 </div>
 
-<!-- ========== MAIN ========== -->
-<div class="main-container">
-
-  <!-- Zwei-Spalten-Layout für A und B -->
-  <div class="row g-4">
-    <!-- Spalte A -->
-    <div class="col-12 col-lg-6">
-      <div class="punkt-column">
-        <div class="mb-2">
-          <div class="d-flex align-items-center justify-content-between">
-            <div class="input-group-label">⏺ Zeitpunkt A</div>
-            <button class="btn btn-sm" id="btnAnow" style="background: transparent; border: 1px solid var(--border-subtle); color: var(--neon); font-size: 0.7rem; padding: 0.15rem 0.7rem; border-radius: 20px;">A = jetzt</button>
-          </div>
-          <input type="text" class="timestamp-input" id="inputA" placeholder="now, -2h, 2025-01-15 14:30:00, 1737000000 …" autocomplete="off" spellcheck="false">
-        </div>
-        <div id="errorA" class="error-hint"></div>
-
-        <!-- Ausgabe A: alle Formate -->
-        <div class="output-card" id="outputCardA">
-          <div class="output-row">
-            <span class="output-label">Unix Sekunden</span>
-            <span class="output-value" id="outUnixSec">—</span>
-            <button class="copy-btn" data-copy-target="outUnixSec" title="Kopieren"><i class="bi bi-clipboard"></i></button>
-          </div>
-          <div class="output-row">
-            <span class="output-label">Unix Millisekunden</span>
-            <span class="output-value" id="outUnixMs">—</span>
-            <button class="copy-btn" data-copy-target="outUnixMs" title="Kopieren"><i class="bi bi-clipboard"></i></button>
-          </div>
-          <div class="output-row">
-            <span class="output-label">YYYY-MM-DD HH:MM:ss</span>
-            <span class="output-value" id="outDateTime">—</span>
-            <button class="copy-btn" data-copy-target="outDateTime" title="Kopieren"><i class="bi bi-clipboard"></i></button>
-          </div>
-          <div class="output-row">
-            <span class="output-label">YYYY-MM-DD</span>
-            <span class="output-value" id="outDate">—</span>
-            <button class="copy-btn" data-copy-target="outDate" title="Kopieren"><i class="bi bi-clipboard"></i></button>
-          </div>
-          <div class="output-row">
-            <span class="output-label">YYYYMMDDHHMMss</span>
-            <span class="output-value" id="outCompact14">—</span>
-            <button class="copy-btn" data-copy-target="outCompact14" title="Kopieren"><i class="bi bi-clipboard"></i></button>
-          </div>
-          <div class="output-row">
-            <span class="output-label">YYYYMMDD</span>
-            <span class="output-value" id="outCompact8">—</span>
-            <button class="copy-btn" data-copy-target="outCompact8" title="Kopieren"><i class="bi bi-clipboard"></i></button>
-          </div>
-          <div class="output-row">
-            <span class="output-label">ISO 8601</span>
-            <span class="output-value" id="outISO">—</span>
-            <button class="copy-btn" data-copy-target="outISO" title="Kopieren"><i class="bi bi-clipboard"></i></button>
-          </div>
-          <div class="output-row">
-            <span class="output-label">UTC</span>
-            <span class="output-value" id="outUTC">—</span>
-            <button class="copy-btn" data-copy-target="outUTC" title="Kopieren"><i class="bi bi-clipboard"></i></button>
-          </div>
-          <div class="output-row">
-            <span class="output-label">Lokal</span>
-            <span class="output-value" id="outLocal">—</span>
-            <button class="copy-btn" data-copy-target="outLocal" title="Kopieren"><i class="bi bi-clipboard"></i></button>
-          </div>
-          <div class="output-row">
-            <span class="output-label">Relativ</span>
-            <span class="output-value" id="outRelative">—</span>
-            <span style="width: 24px;"></span>
-          </div>
-        </div>
-      </div>
+<!-- ========== MAIN GRID ========== -->
+<div class="grid">
+  <!-- === ZEITPUNKT A === -->
+  <div class="card" id="cardA">
+    <h2>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      Zeitpunkt A
+    </h2>
+    <div class="input-group">
+      <input type="text" id="inputA" placeholder="z.B. 2025-01-01, 1792516020, 1792516020 +3d" autocomplete="off" spellcheck="false">
     </div>
-
-    <!-- Spalte B – jetzt inklusive Zeitraum -->
-    <div class="col-12 col-lg-6">
-      <div class="punkt-column">
-        <div class="mb-2">
-          <div class="d-flex align-items-center justify-content-between">
-            <div class="input-group-label">⏺ Zeitpunkt B</div>
-            <button class="btn btn-sm" id="btnBnow" style="background: transparent; border: 1px solid var(--border-subtle); color: var(--neon); font-size: 0.7rem; padding: 0.15rem 0.7rem; border-radius: 20px;">B = jetzt</button>
-          </div>
-          <input type="text" class="timestamp-input" id="inputB" placeholder="z.B. +3d 4h, 1737000000, 2025-12-24 …" autocomplete="off" spellcheck="false">
-        </div>
-        <div id="errorB" class="error-hint"></div>
-
-        <!-- Ausgabe B + Zeitraum zusammengeführt -->
-        <div class="output-card" id="outputCardB">
-          <div class="output-row">
-            <span class="output-label">Zeitraum (Unix Sec.)</span>
-            <span class="output-value" id="outRangeUnix">—</span>
-            <button class="copy-btn" data-copy-target="outRangeUnix" title="Kopieren"><i class="bi bi-clipboard"></i></button>
-          </div>
-
-          <div class="range-divider">Zeitraum A ↔ B</div>
-
-          <div class="output-row">
-            <span class="output-label">Differenz</span>
-            <span class="output-value" id="rangeDiff">—</span>
-            <span style="width: 24px;"></span>
-          </div>
-          <div class="output-row">
-            <span class="output-label">Differenz Unix Sek.</span>
-            <span class="output-value" id="rangeUnixSec">—</span>
-            <span style="width: 24px;"></span>
-          </div>
-          <div class="output-row">
-            <span class="output-label">Differenz Unix Ms.</span>
-            <span class="output-value" id="rangeUnixMs">—</span>
-            <span style="width: 24px;"></span>
-          </div>
-          <div class="output-row">
-            <span class="output-label">Richtung</span>
-            <span class="output-value" id="rangeDirection">—</span>
-            <span style="width: 24px;"></span>
-          </div>
-          <div class="output-row">
-            <span class="output-label">A (Kurz)</span>
-            <span class="output-value" id="rangeA">—</span>
-            <span style="width: 24px;"></span>
-          </div>
-          <div class="output-row">
-            <span class="output-label">B (Kurz)</span>
-            <span class="output-value" id="rangeB">—</span>
-            <span style="width: 24px;"></span>
-          </div>
-        </div>
-      </div>
+    <div class="info-list" id="infoA">
+      <!-- Wird per JS befüllt -->
     </div>
   </div>
 
+  <!-- === ZEITPUNKT B === -->
+  <div class="card" id="cardB">
+    <h2>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      Zeitpunkt B
+    </h2>
+    <div class="input-group">
+      <input type="text" id="inputB" placeholder="z.B. 2025-01-01, 1792516020, +3d (relativ zu A)" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="info-list" id="infoB">
+      <!-- Wird per JS befüllt -->
+    </div>
+  </div>
 </div>
 
-<!-- ========== JAVASCRIPT ========== -->
 <script>
-  /* =========================================================================
-     MODUL: Parser
-     Zweck: Auto-Erkennung von Zeitpunkt-Eingaben (Unix, ISO, relative Angaben)
-     Öffentliche API: Parser.parse(input) → Timestamp in ms | null
-     WICHTIG: Datums-/Zeitangaben ohne TZ werden als LOKALE Zeit interpretiert.
-     ========================================================================= */
-  const Parser = (function() {
-    'use strict';
+  // ============================================================
+  // KONSTANTEN & GLOBALE VARIABLEN
+  // ============================================================
+  const STORAGE_KEY = 'timestampTool';
+  const MAX_HISTORY = 50;
 
-    function unitToMs(unit) {
-      const map = {
-        'ms': 1, 's': 1000, 'm': 60000, 'h': 3600000,
-        'd': 86400000, 'w': 604800000
-      };
-      return map[unit] || null;
+  let lastFocusedInput = 'A'; // 'A' oder 'B'
+  let currentTimestampA = null; // Unix Sekunden oder null
+  let currentTimestampB = null; // Unix Sekunden oder null
+
+  // DOM-Elemente
+  const inputA = document.getElementById('inputA');
+  const inputB = document.getElementById('inputB');
+  const infoAContainer = document.getElementById('infoA');
+  const infoBContainer = document.getElementById('infoB');
+  const unixLiveValue = document.getElementById('unixLiveValue');
+  const localLiveValue = document.getElementById('localLiveValue');
+  const historyPanel = document.getElementById('historyPanel');
+  const historyList = document.getElementById('historyList');
+  const historyToggleBtn = document.getElementById('historyToggleBtn');
+
+  // ============================================================
+  // HILFSFUNKTIONEN: FORMATIERUNG
+  // ============================================================
+
+  function formatDateTimeLocal(timestampSec) {
+    if (timestampSec === null || timestampSec === undefined) return '—';
+    const d = new Date(timestampSec * 1000);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  }
+
+  function formatDateLocal(timestampSec) {
+    if (timestampSec === null || timestampSec === undefined) return '—';
+    const d = new Date(timestampSec * 1000);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  function formatISO(timestampSec) {
+    if (timestampSec === null || timestampSec === undefined) return '—';
+    const d = new Date(timestampSec * 1000);
+    return d.toISOString();
+  }
+
+  function formatUTC(timestampSec) {
+    if (timestampSec === null || timestampSec === undefined) return '—';
+    const d = new Date(timestampSec * 1000);
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const hours = String(d.getUTCHours()).padStart(2, '0');
+    const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(d.getUTCSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} UTC`;
+  }
+
+  function formatLocal(timestampSec) {
+    if (timestampSec === null || timestampSec === undefined) return '—';
+    const d = new Date(timestampSec * 1000);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} (Lokal)`;
+  }
+
+  function formatRelative(timestampSec) {
+    if (timestampSec === null || timestampSec === undefined) return '—';
+    const now = Math.floor(Date.now() / 1000);
+    const diff = timestampSec - now;
+    const absDiff = Math.abs(diff);
+    const days = Math.floor(absDiff / 86400);
+    const hours = Math.floor((absDiff % 86400) / 3600);
+    const minutes = Math.floor((absDiff % 3600) / 60);
+    const seconds = absDiff % 60;
+
+    if (absDiff < 60) {
+      if (absDiff <= 1) return diff === 0 ? 'gerade eben' : (diff > 0 ? 'in 1 Sekunde' : 'vor 1 Sekunde');
+      return diff > 0 ? `in ${absDiff} Sekunden` : `vor ${absDiff} Sekunden`;
     }
 
-    function normalizeUnit(u) {
-      u = u.toLowerCase();
-      if (u === 'sek') return 's';
-      if (u === 'min') return 'm';
-      if (u === 'std') return 'h';
-      if (u === 'tag' || u === 'tage' || u === 'tagen') return 'd';
-      if (u === 'woche' || u === 'wochen') return 'w';
-      if (u === 'stunde' || u === 'stunden') return 'h';
-      if (u === 'minute' || u === 'minuten') return 'm';
-      if (u === 'sekunde' || u === 'sekunden') return 's';
-      return u;
+    let parts = [];
+    if (days > 0) parts.push(`${days} ${'T'}`);
+    if (hours > 0) parts.push(`${hours} ${'Std'}`);
+    if (minutes > 0) parts.push(`${minutes} ${'Min'}`);
+    if (parts.length === 0) parts.push(`${seconds} Sek`);
+
+    const human = parts.join(' ');
+    return diff > 0 ? `in ${human}` : `vor ${human}`;
+  }
+
+  function formatDuration(seconds) {
+    if (seconds === null || seconds === undefined) return '—';
+    const absSec = Math.abs(seconds);
+    const days = Math.floor(absSec / 86400);
+    const hours = Math.floor((absSec % 86400) / 3600);
+    const minutes = Math.floor((absSec % 3600) / 60);
+    const secs = absSec % 60;
+
+    const parts = [];
+    if (days > 0) parts.push(`${days} ${'T'}`);
+    if (hours > 0) parts.push(`${hours} ${'Std'}`);
+    if (minutes > 0) parts.push(`${minutes} ${'Min'}`);
+    if (secs > 0 || parts.length === 0) parts.push(`${secs} Sek`);
+
+    return parts.join(' ');
+  }
+
+  function getDirectionText(tsA, tsB) {
+    if (tsA === null || tsB === null) return '—';
+    if (tsA === tsB) return 'A = B';
+    const diff = tsB - tsA;
+    const absDiff = Math.abs(diff);
+    const durationStr = formatDuration(absDiff);
+    if (diff > 0) {
+      return `B liegt ${durationStr} nach A`;
+    } else {
+      return `B liegt ${durationStr} vor A`;
     }
+  }
 
-    // Relative Angaben: nur Tokens MIT Einheit zählen als relativ.
-    // Zusätzlich wird ein führendes Datum als Basis erkannt.
-    // Gibt {ms} zurück oder null.
-    function parseRelative(str, baseMs) {
-      const base = (typeof baseMs === 'number' && !isNaN(baseMs)) ? baseMs : Date.now();
-      const s = str.trim().toLowerCase();
-      if (s === '') return null;
-      if (s === 'now' || s === 'jetzt') return base;
+  // ============================================================
+  // PARSING & ARITHMETIK
+  // ============================================================
 
-      // Deutsche Formen
-      const germanAgo = s.match(/^vor\s+(\d+)\s*(sekunden?|minuten?|stunden?|tage?n?|wochen?)$/);
-      if (germanAgo) {
-        const ms = unitToMs(normalizeUnit(germanAgo[2]));
-        if (ms === null) return null;
-        return base - parseInt(germanAgo[1], 10) * ms;
+  function parseBase(input) {
+    const trimmed = input.trim();
+    if (!trimmed) return null;
+
+    if (/^\d+$/.test(trimmed)) {
+      const ts = parseInt(trimmed, 10);
+      if (ts >= 0 && ts <= 253402300799) {
+        return ts;
       }
-      const germanIn = s.match(/^in\s+(\d+)\s*(sekunden?|minuten?|stunden?|tage?n?|wochen?)$/);
-      if (germanIn) {
-        const ms = unitToMs(normalizeUnit(germanIn[2]));
-        if (ms === null) return null;
-        return base + parseInt(germanIn[1], 10) * ms;
-      }
-
-      // Tokenisieren: NUR <Vorzeichen optional><Zahl><Einheit> – Einheit ist Pflicht!
-      const tokenRegex = /([+-]?\d+)\s*(ms|s|m|h|d|w|sek|min|std|tag(?:e|en)?|woche(?:n)?|stunde(?:n)?|minute(?:n)?|sekunde(?:n)?)/gi;
-      let totalMs = 0;
-      let matched = false;
-      let m;
-      while ((m = tokenRegex.exec(s)) !== null) {
-        const num = parseInt(m[1], 10);
-        const msFactor = unitToMs(normalizeUnit(m[2]));
-        if (msFactor === null) return null;
-        const sign = m[1].startsWith('-') ? -1 : 1;
-        totalMs += sign * Math.abs(num) * msFactor;
-        matched = true;
-      }
-
-      if (!matched) return null;
-      return base + totalMs;
-    }
-
-    function looksRelative(str) {
-      const s = str.trim().toLowerCase();
-      if (s === 'now' || s === 'jetzt') return true;
-      if (/^vor\s+\d+\s*(sekunden?|minuten?|stunden?|tage?n?|wochen?)$/.test(s)) return true;
-      if (/^in\s+\d+\s*(sekunden?|minuten?|stunden?|tage?n?|wochen?)$/.test(s)) return true;
-      // Mindestens ein Token mit Einheit
-      return /[+-]?\d+\s*(?:ms|s|m|h|d|w|sek|min|std|tag(?:e|en)?|woche(?:n)?|stunde(?:n)?|minute(?:n)?|sekunde(?:n)?)/i.test(s);
-    }
-
-    function parseUnixDigits(digits) {
-      if (digits.length === 10) return parseInt(digits, 10) * 1000;
-      if (digits.length === 13) return parseInt(digits, 10);
       return null;
     }
 
-    function parseCompact8(digits) {
-      if (digits.length !== 8) return null;
-      const y = parseInt(digits.slice(0, 4), 10);
-      const m = parseInt(digits.slice(4, 6), 10) - 1;
-      const d = parseInt(digits.slice(6, 8), 10);
-      const date = new Date(y, m, d);
-      return isNaN(date.getTime()) ? null : date.getTime();
-    }
+    const dateTimeRegex = /^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/;
+    let match = trimmed.match(dateTimeRegex);
+    if (match) {
+      const year = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      const day = parseInt(match[3], 10);
+      const hours = parseInt(match[4], 10);
+      const minutes = parseInt(match[5], 10);
+      const seconds = match[6] ? parseInt(match[6], 10) : 0;
 
-    function parseCompact14(digits) {
-      if (digits.length !== 14) return null;
-      const y = parseInt(digits.slice(0, 4), 10);
-      const mo = parseInt(digits.slice(4, 6), 10) - 1;
-      const d = parseInt(digits.slice(6, 8), 10);
-      const h = parseInt(digits.slice(8, 10), 10);
-      const mi = parseInt(digits.slice(10, 12), 10);
-      const s = parseInt(digits.slice(12, 14), 10);
-      const date = new Date(y, mo, d, h, mi, s);
-      return isNaN(date.getTime()) ? null : date.getTime();
-    }
-
-    function parseDateTime(str) {
-      const cleaned = str.replace('T', ' ').trim();
-      const m = cleaned.match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
-      if (!m) return null;
-      const y = parseInt(m[1], 10);
-      const mo = parseInt(m[2], 10) - 1;
-      const d = parseInt(m[3], 10);
-      const h = m[4] ? parseInt(m[4], 10) : 0;
-      const mi = m[5] ? parseInt(m[5], 10) : 0;
-      const s = m[6] ? parseInt(m[6], 10) : 0;
-      const date = new Date(y, mo, d, h, mi, s);
-      return isNaN(date.getTime()) ? null : date.getTime();
-    }
-
-    function parseDateOnly(str) {
-      const m = str.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if (!m) return null;
-      const y = parseInt(m[1], 10);
-      const mo = parseInt(m[2], 10) - 1;
-      const d = parseInt(m[3], 10);
-      const date = new Date(y, mo, d);
-      return isNaN(date.getTime()) ? null : date.getTime();
-    }
-
-    function parse(input, baseMs) {
-      if (!input || typeof input !== 'string') return null;
-      const trimmed = input.trim();
-      if (trimmed === '') return null;
-
-      // 1) Reine Zahl
-      if (/^\d+$/.test(trimmed)) {
-        const digits = trimmed;
-        if (digits.length === 10 || digits.length === 13) return parseUnixDigits(digits);
-        if (digits.length === 8) {
-          const asCompact = parseCompact8(digits);
-          if (asCompact !== null) return asCompact;
-          return null;
-        }
-        if (digits.length === 14) return parseCompact14(digits);
+      const d = new Date(year, month, day, hours, minutes, seconds);
+      if (isNaN(d.getTime())) return null;
+      if (d.getFullYear() !== year || d.getMonth() !== month || d.getDate() !== day ||
+          d.getHours() !== hours || d.getMinutes() !== minutes || d.getSeconds() !== seconds) {
         return null;
       }
-
-      // 2) Datum (+ optional relative Ausdrücke dahinter)
-      //    z.B. "2025-01-01", "2025-01-01 12:00:00", "2025-01-01 +3d", "2025-01-01 12:00:00 -2h 30m"
-      const dateTimeRel = trimmed.match(/^(\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?)\s*(.*)$/);
-      if (dateTimeRel) {
-        const datePart = dateTimeRel[1];
-        const rest = dateTimeRel[2].trim();
-
-        // Reines Datum / Datum+Zeit
-        const dt = parseDateTime(datePart);
-        if (dt !== null) {
-          if (rest === '') return dt;
-          if (looksRelative(rest)) {
-            const rel = parseRelative(rest, dt);
-            if (rel !== null) return rel;
-          }
-          return null; // Datum + unverständlicher Rest
-        }
-        const dOnly = parseDateOnly(datePart);
-        if (dOnly !== null) {
-          if (rest === '') return dOnly;
-          if (looksRelative(rest)) {
-            const rel = parseRelative(rest, dOnly);
-            if (rel !== null) return rel;
-          }
-          return null;
-        }
-      }
-
-      // 3) Nur relative Angabe (Basis = baseMs oder jetzt)
-      if (looksRelative(trimmed)) {
-        const rel = parseRelative(trimmed, baseMs);
-        if (rel !== null) return rel;
-      }
-
-      return null;
+      return Math.floor(d.getTime() / 1000);
     }
 
-    return { parse };
-  })();
-
-
-
-  /* =========================================================================
-     MODUL: Formatter
-     Zweck: Erzeugt alle Ausgabedarstellungen aus einem Timestamp (ms)
-     Öffentliche API: Formatter.formatAll(ms), Formatter.relativeShort(iso)
-     ========================================================================= */
-  const Formatter = (function() {
-    'use strict';
-
-    function pad(n, len = 2) {
-      return String(n).padStart(len, '0');
+    const dateRegex = /^(\d{4})-(\d{2})-(\d{2})$/;
+    match = trimmed.match(dateRegex);
+    if (match) {
+      const year = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      const day = parseInt(match[3], 10);
+      const d = new Date(year, month, day);
+      if (isNaN(d.getTime())) return null;
+      if (d.getFullYear() !== year || d.getMonth() !== month || d.getDate() !== day) return null;
+      return Math.floor(d.getTime() / 1000);
     }
 
-    function formatAll(ms) {
-      const date = new Date(ms);
-      const unixSec = Math.floor(ms / 1000);
-      const unixMs = ms;
+    return null;
+  }
 
-      const yyyy = date.getFullYear();
-      const mm = pad(date.getMonth() + 1);
-      const dd = pad(date.getDate());
-      const hh = pad(date.getHours());
-      const min = pad(date.getMinutes());
-      const ss = pad(date.getSeconds());
+  function parseArithmeticPart(input) {
+    const trimmed = input.trim();
+    const arithRegex = /^(.*?)\s*([+-])\s*(\d+)\s*([dmy])$/i;
+    const match = trimmed.match(arithRegex);
+    if (!match) return null;
 
-      const dateTime = `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
-      const dateOnly = `${yyyy}-${mm}-${dd}`;
-      const compact14 = `${yyyy}${mm}${dd}${hh}${min}${ss}`;
-      const compact8 = `${yyyy}${mm}${dd}`;
+    const baseStr = match[1].trim();
+    const op = match[2];
+    const amount = parseInt(match[3], 10);
+    const unit = match[4].toLowerCase();
 
-      const iso = date.toISOString();
-      const utc = date.toUTCString();
+    if (amount < 0) return null;
 
-      const local = date.toLocaleString('de-DE', {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit',
-        timeZoneName: 'short'
-      });
+    return { baseStr, op, amount, unit };
+  }
 
-      const relative = relativeFromMs(Date.now() - ms);
+  function applyArithmetic(timestampSec, op, amount, unit) {
+    if (timestampSec === null) return null;
+    const d = new Date(timestampSec * 1000);
 
-      return {
-        unixSec: String(unixSec),
-        unixMs: String(unixMs),
-        dateTime, dateOnly, compact14, compact8,
-        iso, utc, local, relative
-      };
+    if (unit === 'd') {
+      const deltaMs = amount * 86400 * 1000;
+      const newTime = d.getTime() + (op === '+' ? deltaMs : -deltaMs);
+      return Math.floor(newTime / 1000);
+    } else if (unit === 'm') {
+      const currentMonth = d.getMonth();
+      const targetMonth = op === '+' ? currentMonth + amount : currentMonth - amount;
+      d.setMonth(targetMonth);
+      return Math.floor(d.getTime() / 1000);
+    } else if (unit === 'y') {
+      const currentYear = d.getFullYear();
+      const targetYear = op === '+' ? currentYear + amount : currentYear - amount;
+      d.setFullYear(targetYear);
+      return Math.floor(d.getTime() / 1000);
     }
+    return null;
+  }
 
-    function relativeFromMs(diffMs) {
-      const abs = Math.abs(diffMs);
-      const future = diffMs < 0;
-      const seconds = Math.floor(abs / 1000);
-      const minutes = Math.floor(seconds / 60);
-      const hours = Math.floor(minutes / 60);
-      const days = Math.floor(hours / 24);
+  function resolveInput(input, fallbackBase = null) {
+    const trimmed = input.trim();
+    if (!trimmed) return null;
 
-      let val, unit;
-      if (days > 0) { val = days; unit = 'Tag' + (days !== 1 ? 'en' : ''); }
-      else if (hours > 0) { val = hours; unit = 'Std.'; }
-      else if (minutes > 0) { val = minutes; unit = 'Min.'; }
-      else { val = seconds; unit = 'Sek.'; }
-
-      return future ? `in ${val} ${unit}` : `vor ${val} ${unit}`;
-    }
-
-    function relativeShort(isoString) {
-      const ms = new Date(isoString).getTime();
-      if (isNaN(ms)) return '—';
-      const diff = Date.now() - ms;
-      const abs = Math.abs(diff);
-      const sec = Math.floor(abs / 1000);
-      const min = Math.floor(sec / 60);
-      const hr = Math.floor(min / 60);
-      const day = Math.floor(hr / 24);
-      let val, unit;
-      if (day > 0) { val = day; unit = 'Tg.'; }
-      else if (hr > 0) { val = hr; unit = 'Std.'; }
-      else if (min > 0) { val = min; unit = 'Min.'; }
-      else { val = sec; unit = 'Sek.'; }
-      return diff > 0 ? `vor ${val} ${unit}` : `in ${val} ${unit}`;
-    }
-
-    return { formatAll, relativeShort };
-  })();
-
-  /* =========================================================================
-     MODUL: History
-     Zweck: localStorage-Verwaltung (Key: "timestampTool")
-     Öffentliche API: History.add(raw, resolvedISO), History.get(), History.clear()
-     ========================================================================= */
-  const History = (function() {
-    'use strict';
-    const STORAGE_KEY = 'timestampTool';
-    const MAX_ENTRIES = 20;
-
-    let history = [];
-
-    function load() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          history = JSON.parse(raw);
-          if (!Array.isArray(history)) history = [];
-        } else {
-          history = [];
-        }
-      } catch (e) {
-        history = [];
-      }
-      if (history.length > MAX_ENTRIES) history = history.slice(0, MAX_ENTRIES);
-    }
-
-    function save() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-      } catch (e) { /* ignore */ }
-    }
-
-    function add(raw, resolvedISO) {
-      if (!raw || !resolvedISO) return;
-      const usedAt = new Date().toISOString();
-      history = history.filter(e => e.resolved !== resolvedISO);
-      history.unshift({ raw, resolved: resolvedISO, usedAt });
-      if (history.length > MAX_ENTRIES) history = history.slice(0, MAX_ENTRIES);
-      save();
-    }
-
-    function get() { return [...history]; }
-    function clear() { history = []; save(); }
-
-    load();
-    return { add, get, clear };
-  })();
-
-  /* =========================================================================
-     MODUL: Clipboard
-     Zweck: Kopieren mit Fallback
-     Öffentliche API: Clipboard.copy(text)
-     ========================================================================= */
-  const Clipboard = (function() {
-    'use strict';
-
-    async function copy(text) {
-      if (!text || text === '—') return false;
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(text);
-          return true;
-        }
-      } catch (e) { /* fallback */ }
-
-      try {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        return true;
-      } catch (e) {
-        return false;
-      }
-    }
-
-    return { copy };
-  })();
-
-  /* =========================================================================
-     MODUL: UI
-     Zweck: Rendering, Event-Binding, Fokus-Tracking, History-Dropdown
-     Öffentliche API: UI.init()
-     ========================================================================= */
-  const UI = (function() {
-    'use strict';
-
-    const inputA = document.getElementById('inputA');
-    const inputB = document.getElementById('inputB');
-    const errorA = document.getElementById('errorA');
-    const errorB = document.getElementById('errorB');
-
-    const unixSecValue = document.getElementById('unixSecValue');
-    const unixMsValue = document.getElementById('unixMsValue');
-    const localTimeValue = document.getElementById('localTimeValue');
-
-    const outUnixSec = document.getElementById('outUnixSec');
-    const outUnixMs = document.getElementById('outUnixMs');
-    const outDateTime = document.getElementById('outDateTime');
-    const outDate = document.getElementById('outDate');
-    const outCompact14 = document.getElementById('outCompact14');
-    const outCompact8 = document.getElementById('outCompact8');
-    const outISO = document.getElementById('outISO');
-    const outUTC = document.getElementById('outUTC');
-    const outLocal = document.getElementById('outLocal');
-    const outRelative = document.getElementById('outRelative');
-    const outRangeUnix = document.getElementById('outRangeUnix');
-
-    const rangeDiff = document.getElementById('rangeDiff');
-    const rangeUnixSec = document.getElementById('rangeUnixSec');
-    const rangeUnixMs = document.getElementById('rangeUnixMs');
-    const rangeDirection = document.getElementById('rangeDirection');
-    const rangeA = document.getElementById('rangeA');
-    const rangeB = document.getElementById('rangeB');
-
-    const btnAnow = document.getElementById('btnAnow');
-    const btnBnow = document.getElementById('btnBnow');
-    const historyToggleBtn = document.getElementById('historyToggleBtn');
-    const historyDropdown = document.getElementById('historyDropdown');
-
-    let lastFocusedInput = inputA;
-
-    // Debounce-Timer für History (3 Sekunden, getrennt pro Feld)
-    let historyDebounceTimerA = null;
-    let historyDebounceTimerB = null;
-
-    function init() {
-      inputA.addEventListener('focus', () => { lastFocusedInput = inputA; });
-      inputB.addEventListener('focus', () => { lastFocusedInput = inputB; });
-
-      inputA.addEventListener('input', onInputA);
-      inputB.addEventListener('input', onInputB);
-
-      btnAnow.addEventListener('click', () => {
-        inputA.value = 'now';
-        lastFocusedInput = inputA;
-        onInputA();
-        inputA.focus();
-      });
-      btnBnow.addEventListener('click', () => {
-        inputB.value = 'now';
-        lastFocusedInput = inputB;
-        onInputB();
-        inputB.focus();
-      });
-
-      document.querySelectorAll('.copy-btn').forEach(btn => {
-        btn.addEventListener('click', handleCopyClick);
-      });
-
-      historyToggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        historyDropdown.classList.toggle('show');
-        if (historyDropdown.classList.contains('show')) {
-          renderHistoryDropdown();
-        }
-      });
-
-      document.addEventListener('click', (e) => {
-        if (!historyDropdown.contains(e.target) && e.target !== historyToggleBtn && !historyToggleBtn.contains(e.target)) {
-          historyDropdown.classList.remove('show');
-        }
-      });
-
-      document.querySelectorAll('.live-metric').forEach(el => {
-        el.addEventListener('click', () => {
-          const valueEl = el.querySelector('.value');
-          if (!valueEl) return;
-          const text = valueEl.textContent;
-          if (text && text !== '—') {
-            lastFocusedInput.value = text;
-            lastFocusedInput.dispatchEvent(new Event('input', { bubbles: true }));
-            lastFocusedInput.focus();
-          }
-        });
-      });
-
-      updateLiveHeader();
-      setInterval(updateLiveHeader, 200);
-
-      clearOutputA();
-      clearRangeOutput();
-      outRangeUnix.textContent = '—';
-
-      inputA.value = '';
-      inputB.value = '';
-    }
-
-    function updateLiveHeader() {
-      const now = Date.now();
-      unixSecValue.textContent = Math.floor(now / 1000);
-      unixMsValue.textContent = now;
-      localTimeValue.textContent = new Date(now).toLocaleTimeString('de-DE', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-      });
-    }
-
-    function onInputA() {
-      const raw = inputA.value;
-      const timestamp = Parser.parse(raw);
-      if (timestamp !== null) {
-        errorA.textContent = '';
-        renderOutputA(timestamp);
-        scheduleHistory('A', raw, timestamp);
+    const arith = parseArithmeticPart(trimmed);
+    if (arith) {
+      let baseTimestamp = null;
+      if (arith.baseStr === '') {
+        if (fallbackBase === null) return null;
+        baseTimestamp = fallbackBase;
       } else {
-        errorA.textContent = raw.trim() ? '⚠ Ungültiges Format' : '';
-        clearOutputA();
+        baseTimestamp = parseBase(arith.baseStr);
+        if (baseTimestamp === null) return null;
       }
-      // B muss neu berechnet werden, weil B relativ zu A sein kann
-      onInputB();
+      return applyArithmetic(baseTimestamp, arith.op, arith.amount, arith.unit);
+    } else {
+      return parseBase(trimmed);
     }
+  }
 
-    function onInputB() {
-      const rawA = inputA.value;
-      const rawB = inputB.value;
-      const tsA = Parser.parse(rawA);
-      // B relativ zu A: baseMs = A, falls A gültig; sonst jetzt
-      const timestamp = Parser.parse(rawB, tsA !== null ? tsA : undefined);
-      if (timestamp !== null) {
-        errorB.textContent = '';
-        updateRange(tsA, timestamp);
-        scheduleHistory('B', rawB, timestamp);
-      } else {
-        errorB.textContent = rawB.trim() ? '⚠ Ungültiges Format' : '';
-        updateRange(tsA, null);
-      }
-    }
+  // ============================================================
+  // RENDERING DER INFO-ZEILEN
+  // ============================================================
 
-    
+  function createInfoRow(label, value) {
+    const row = document.createElement('div');
+    row.className = 'info-row';
 
-    function scheduleHistory(which, raw, timestamp) {
-      if (which === 'A') {
-        if (historyDebounceTimerA) clearTimeout(historyDebounceTimerA);
-      } else {
-        if (historyDebounceTimerB) clearTimeout(historyDebounceTimerB);
-      }
+    const labelEl = document.createElement('span');
+    labelEl.className = 'info-label';
+    labelEl.textContent = label;
 
-      const timer = setTimeout(() => {
-        const iso = new Date(timestamp).toISOString();
-        History.add(raw, iso);
-        if (historyDropdown.classList.contains('show')) {
-          renderHistoryDropdown();
-        }
-      }, 3000);
+    const valueEl = document.createElement('span');
+    valueEl.className = 'info-value';
+    valueEl.textContent = value;
+    valueEl.title = value;
 
-      if (which === 'A') historyDebounceTimerA = timer;
-      else historyDebounceTimerB = timer;
-    }
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'copy-btn';
+    copyBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+    `;
+    copyBtn.title = 'Kopieren';
+    copyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      copyToClipboard(value, copyBtn);
+    });
 
-    function renderOutputA(ms) {
-      const fmt = Formatter.formatAll(ms);
-      outUnixSec.textContent = fmt.unixSec;
-      outUnixMs.textContent = fmt.unixMs;
-      outDateTime.textContent = fmt.dateTime;
-      outDate.textContent = fmt.dateOnly;
-      outCompact14.textContent = fmt.compact14;
-      outCompact8.textContent = fmt.compact8;
-      outISO.textContent = fmt.iso;
-      outUTC.textContent = fmt.utc;
-      outLocal.textContent = fmt.local;
-      outRelative.textContent = fmt.relative;
-    }
+    row.appendChild(labelEl);
+    row.appendChild(valueEl);
+    row.appendChild(copyBtn);
+    return row;
+  }
 
-    function clearOutputA() {
-      outUnixSec.textContent = '—';
-      outUnixMs.textContent = '—';
-      outDateTime.textContent = '—';
-      outDate.textContent = '—';
-      outCompact14.textContent = '—';
-      outCompact8.textContent = '—';
-      outISO.textContent = '—';
-      outUTC.textContent = '—';
-      outLocal.textContent = '—';
-      outRelative.textContent = '—';
-    }
-
-    function updateRange(tsA, tsB) {
-      if (tsA === null || tsB === null || tsA === undefined || tsB === undefined) {
-        clearRangeOutput();
-        outRangeUnix.textContent = '—';
-        return;
-      }
-
-      const aSec = Math.floor(tsA / 1000);
-      const bSec = Math.floor(tsB / 1000);
-      outRangeUnix.textContent = `${aSec} AND ${bSec}`;
-
-      const diffMs = tsB - tsA;
-      const absMs = Math.abs(diffMs);
-      const diffSec = Math.floor(absMs / 1000);
-      const diffMin = Math.floor(diffSec / 60);
-      const diffHours = Math.floor(diffMin / 60);
-      const diffDays = Math.floor(diffHours / 24);
-
-      let diffStr = '';
-      if (diffDays > 0) diffStr += `${diffDays} Tg. `;
-      if (diffHours % 24 > 0) diffStr += `${diffHours % 24} Std. `;
-      if (diffMin % 60 > 0) diffStr += `${diffMin % 60} Min. `;
-      diffStr += `${diffSec % 60} Sek.`;
-      diffStr = diffStr.trim() || '0 Sek.';
-
-      rangeDiff.textContent = diffStr;
-      rangeUnixSec.textContent = diffSec + ' s';
-      rangeUnixMs.textContent = absMs + ' ms';
-
-      if (diffMs > 0) {
-        rangeDirection.innerHTML = `<span class="direction-badge">B liegt ${relativeDirection(absMs)} nach A</span>`;
-      } else if (diffMs < 0) {
-        rangeDirection.innerHTML = `<span class="direction-badge">B liegt ${relativeDirection(absMs)} vor A</span>`;
-      } else {
-        rangeDirection.innerHTML = `<span class="direction-badge">A und B sind identisch</span>`;
-      }
-
-      const fmtA = Formatter.formatAll(tsA);
-      const fmtB = Formatter.formatAll(tsB);
-      rangeA.textContent = `${fmtA.dateTime} (${fmtA.unixSec} s)`;
-      rangeB.textContent = `${fmtB.dateTime} (${fmtB.unixSec} s)`;
-    }
-
-    function relativeDirection(absMs) {
-      const sec = Math.floor(absMs / 1000);
-      const min = Math.floor(sec / 60);
-      const hr = Math.floor(min / 60);
-      const day = Math.floor(hr / 24);
-      if (day > 0) return `${day} Tag${day !== 1 ? 'en' : ''}`;
-      if (hr > 0) return `${hr} Stunde${hr !== 1 ? 'n' : ''}`;
-      if (min > 0) return `${min} Minute${min !== 1 ? 'n' : ''}`;
-      return `${sec} Sekunde${sec !== 1 ? 'n' : ''}`;
-    }
-
-    function clearRangeOutput() {
-      rangeDiff.textContent = '—';
-      rangeUnixSec.textContent = '—';
-      rangeUnixMs.textContent = '—';
-      rangeDirection.textContent = '—';
-      rangeA.textContent = '—';
-      rangeB.textContent = '—';
-    }
-
-    async function handleCopyClick(e) {
-      const btn = e.currentTarget;
-      const targetId = btn.getAttribute('data-copy-target');
-      if (!targetId) return;
-      const targetEl = document.getElementById(targetId);
-      if (!targetEl) return;
-      const text = targetEl.textContent;
-      if (!text || text === '—') return;
-
-      const success = await Clipboard.copy(text);
-      if (success) {
-        btn.classList.add('copied');
-        btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+  function copyToClipboard(text, buttonEl) {
+    navigator.clipboard.writeText(text).then(() => {
+      if (buttonEl) {
+        buttonEl.classList.add('copied');
         setTimeout(() => {
-          btn.classList.remove('copied');
-          btn.innerHTML = '<i class="bi bi-clipboard"></i>';
+          buttonEl.classList.remove('copied');
         }, 1200);
       }
+    }).catch(err => {
+      console.warn('Clipboard fehlgeschlagen:', err);
+    });
+  }
+
+  function renderInfoA(timestampSec) {
+    infoAContainer.innerHTML = '';
+    if (timestampSec === null) {
+      const emptyMsg = document.createElement('div');
+      emptyMsg.className = 'info-row';
+      emptyMsg.style.justifyContent = 'center';
+      emptyMsg.style.color = '#6b7b8b';
+      emptyMsg.style.fontStyle = 'italic';
+      emptyMsg.textContent = 'Keine gültige Eingabe';
+      infoAContainer.appendChild(emptyMsg);
+      return;
     }
 
-    function renderHistoryDropdown() {
-      const entries = History.get();
-      if (entries.length === 0) {
-        historyDropdown.innerHTML = `
-          <div class="history-item" style="color: var(--text-secondary); text-align: center; padding: 1rem; cursor: default;">
-            Kein Verlauf
-          </div>
-        `;
-        return;
+    const rows = [
+      { label: 'Unix Timestamp', value: String(timestampSec) },
+      { label: 'YYYY-MM-DD HH:MM:ss', value: formatDateTimeLocal(timestampSec) },
+      { label: 'YYYY-MM-DD', value: formatDateLocal(timestampSec) },
+      { label: 'ISO 8601', value: formatISO(timestampSec) },
+      { label: 'UTC', value: formatUTC(timestampSec) },
+      { label: 'Lokal', value: formatLocal(timestampSec) },
+      { label: 'Relativ', value: formatRelative(timestampSec) },
+    ];
+
+    rows.forEach(({ label, value }) => {
+      infoAContainer.appendChild(createInfoRow(label, value));
+    });
+  }
+
+  function renderInfoB(timestampA, timestampB) {
+    infoBContainer.innerHTML = '';
+    if (timestampB === null) {
+      const emptyMsg = document.createElement('div');
+      emptyMsg.className = 'info-row';
+      emptyMsg.style.justifyContent = 'center';
+      emptyMsg.style.color = '#6b7b8b';
+      emptyMsg.style.fontStyle = 'italic';
+      emptyMsg.textContent = 'Keine gültige Eingabe';
+      infoBContainer.appendChild(emptyMsg);
+      return;
+    }
+
+    const rows = [];
+
+    const zeitraum = (timestampA !== null) ? `${timestampA} AND ${timestampB}` : '— (A fehlt)';
+
+    let diffSec = null;
+    let diffHuman = '—';
+    let direction = '—';
+    if (timestampA !== null) {
+      diffSec = timestampB - timestampA;
+      diffHuman = formatDuration(Math.abs(diffSec));
+      direction = getDirectionText(timestampA, timestampB);
+    }
+
+    rows.push({ label: 'Unix Timestamp', value: String(timestampB) });
+    rows.push({ label: 'YYYY-MM-DD HH:MM:ss', value: formatDateTimeLocal(timestampB) });
+    rows.push({ label: 'YYYY-MM-DD', value: formatDateLocal(timestampB) });
+
+    rows.push({ label: 'Unix Zeitraum', value: zeitraum });
+
+    rows.push({ label: 'Differenz', value: diffHuman });
+    rows.push({ label: 'Differenz in Sek.', value: diffSec !== null ? String(diffSec) : '—' });
+    rows.push({ label: 'Richtung', value: direction });
+
+    rows.forEach(({ label, value }) => {
+      infoBContainer.appendChild(createInfoRow(label, value));
+    });
+  }
+
+  // ============================================================
+  // HAUPT-UPDATE-FUNKTION
+  // ============================================================
+
+  function updateAll() {
+    const rawA = inputA.value;
+    const rawB = inputB.value;
+
+    const tsA = resolveInput(rawA, null);
+    const tsB = resolveInput(rawB, tsA);
+
+    if (rawA.trim() !== '' && tsA === null) {
+      inputA.classList.add('invalid');
+    } else {
+      inputA.classList.remove('invalid');
+    }
+
+    if (rawB.trim() !== '' && tsB === null) {
+      inputB.classList.add('invalid');
+    } else {
+      inputB.classList.remove('invalid');
+    }
+
+    currentTimestampA = tsA;
+    currentTimestampB = tsB;
+
+    renderInfoA(tsA);
+    renderInfoB(tsA, tsB);
+
+    saveToHistory(tsA, tsB);
+  }
+
+  // ============================================================
+  // VERLAUF (STORAGE)
+  // ============================================================
+
+  function loadHistory() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) return [];
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.warn('Fehler beim Laden des Verlaufs:', e);
+      return [];
+    }
+  }
+
+  function persistHistory(historyArray) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(historyArray));
+    } catch (e) {
+      console.warn('Fehler beim Speichern des Verlaufs:', e);
+    }
+  }
+
+  function addHistoryEntry(tsA, tsB) {
+    if (tsA === null) return;
+
+    const history = loadHistory();
+    const newEntry = { a: tsA, b: tsB };
+
+    const isDuplicate = history.some(entry => entry.a === tsA && entry.b === tsB);
+    if (isDuplicate) {
+      return;
+    }
+
+    history.unshift(newEntry);
+    if (history.length > MAX_HISTORY) {
+      history.length = MAX_HISTORY;
+    }
+    persistHistory(history);
+    renderHistoryList();
+  }
+
+  function saveToHistory(tsA, tsB) {
+    if (tsA === null) return;
+    addHistoryEntry(tsA, tsB);
+  }
+
+  function renderHistoryList() {
+    const history = loadHistory();
+    historyList.innerHTML = '';
+
+    if (history.length === 0) {
+      const empty = document.createElement('li');
+      empty.className = 'history-empty';
+      empty.textContent = 'Noch keine Einträge';
+      historyList.appendChild(empty);
+      return;
+    }
+
+    history.forEach(entry => {
+      const li = document.createElement('li');
+      li.className = 'history-item';
+
+      const dateA = formatDateTimeLocal(entry.a);
+      let text = dateA;
+      if (entry.b !== null && entry.b !== undefined) {
+        const dateB = formatDateTimeLocal(entry.b);
+        text = `${dateA} – ${dateB}`;
       }
 
-      let html = '';
-      entries.forEach((entry) => {
-        const resolvedLocal = formatLocalForDisplay(entry.resolved);
-        const rel = Formatter.relativeShort(entry.resolved);
-        html += `
-          <div class="history-item" data-resolved="${entry.resolved}">
-            <div class="raw">${escapeHtml(entry.raw)}</div>
-            <div class="meta">
-              <span class="resolved">${resolvedLocal}<span class="tz">lokal</span></span>
-              <span>${rel}</span>
-            </div>
-          </div>
-        `;
+      li.textContent = text;
+      li.title = 'Klicken, um diesen Zeitpunkt wiederherzustellen';
+      li.addEventListener('click', () => {
+        inputA.value = String(entry.a);
+        if (entry.b !== null && entry.b !== undefined) {
+          inputB.value = String(entry.b);
+        } else {
+          inputB.value = '';
+        }
+        updateAll();
+        // Dropdown nach Auswahl schließen
+        historyPanel.classList.remove('open');
       });
 
-      html += `<div class="history-clear" id="historyClearBtn">Verlauf löschen</div>`;
-      historyDropdown.innerHTML = html;
+      historyList.appendChild(li);
+    });
+  }
 
-      historyDropdown.querySelectorAll('.history-item').forEach(el => {
-        el.addEventListener('click', () => {
-          const resolvedISO = el.getAttribute('data-resolved');
-          if (!resolvedISO) return;
-          const localForInput = formatLocalForInput(resolvedISO);
-          lastFocusedInput.value = localForInput;
-          lastFocusedInput.dispatchEvent(new Event('input', { bubbles: true }));
-          lastFocusedInput.focus();
-          historyDropdown.classList.remove('show');
-        });
-      });
-
-      const clearBtn = document.getElementById('historyClearBtn');
-      if (clearBtn) {
-        clearBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          History.clear();
-          renderHistoryDropdown();
-        });
-      }
+  function toggleHistoryPanel() {
+    historyPanel.classList.toggle('open');
+    if (historyPanel.classList.contains('open')) {
+      renderHistoryList();
     }
+  }
 
-    function formatLocalForDisplay(isoString) {
-      const d = new Date(isoString);
-      if (isNaN(d.getTime())) return '—';
-      const pad = n => String(n).padStart(2, '0');
-      return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    }
+  // ============================================================
+  // LIVE-UHREN & CLIPBOARD-BUTTONS IN DER TOPBAR
+  // ============================================================
 
-    function formatLocalForInput(isoString) {
-      const d = new Date(isoString);
-      if (isNaN(d.getTime())) return '';
-      const pad = n => String(n).padStart(2, '0');
-      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
-             `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    }
+  function updateLiveClocks() {
+    const now = Math.floor(Date.now() / 1000);
+    unixLiveValue.textContent = now;
 
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
-    }
+    const d = new Date(now * 1000);
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    localLiveValue.textContent = `${hours}:${minutes}:${seconds}`;
+  }
 
-    return { init };
-  })();
+  function insertIntoFocusedInput(value) {
+    const targetInput = lastFocusedInput === 'A' ? inputA : inputB;
+    targetInput.value = String(value);
+    targetInput.focus();
+    updateAll();
+  }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    UI.init();
+  // ============================================================
+  // EVENT-LISTENER
+  // ============================================================
+
+  inputA.addEventListener('focus', () => { lastFocusedInput = 'A'; });
+  inputB.addEventListener('focus', () => { lastFocusedInput = 'B'; });
+
+  let inputTimeout;
+  function handleInputChange() {
+    clearTimeout(inputTimeout);
+    inputTimeout = setTimeout(() => {
+      updateAll();
+    }, 150);
+  }
+  inputA.addEventListener('input', handleInputChange);
+  inputB.addEventListener('input', handleInputChange);
+
+  document.getElementById('unixLiveBtn').addEventListener('click', () => {
+    const now = Math.floor(Date.now() / 1000);
+    insertIntoFocusedInput(now);
   });
 
+  document.getElementById('localLiveBtn').addEventListener('click', () => {
+    const d = new Date();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const dateTimeStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    insertIntoFocusedInput(dateTimeStr);
+  });
+
+  historyToggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleHistoryPanel();
+  });
+
+  // Klick außerhalb schließt das Dropdown
+  document.addEventListener('click', (e) => {
+    if (!historyPanel.classList.contains('open')) return;
+    if (historyPanel.contains(e.target) || historyToggleBtn.contains(e.target)) return;
+    historyPanel.classList.remove('open');
+  });
+
+  // ============================================================
+  // INITIALISIERUNG
+  // ============================================================
+
+  updateLiveClocks();
+  setInterval(updateLiveClocks, 1000);
+
+  renderHistoryList();
+
+  setTimeout(() => {
+    updateAll();
+  }, 50);
 </script>
 </body>
 </html>
